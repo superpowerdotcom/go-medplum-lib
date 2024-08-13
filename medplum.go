@@ -158,13 +158,14 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 	httpResp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	// Unmarshal the response body into a ContainedResource
-	unmarshaller, err := jsonformat.NewUnmarshaller(m.opts.Timezone, fhirversion.R4)
+	unmarshaller, err := jsonformat.NewUnmarshallerWithoutValidation(m.opts.Timezone, fhirversion.R4)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create unmarshaler: %s", err)
 	}
 
 	containedResource, err := unmarshaller.UnmarshalR4(bodyBytes)
 	if err != nil {
+		fmt.Println("bodyBytes: ", string(bodyBytes))
 		return nil, fmt.Errorf("unable to unmarshal response body: %s", err)
 	}
 
@@ -200,7 +201,6 @@ func (m *Medplum) ReadResource(id string, code codes_go_proto.ResourceTypeCode_V
 }
 
 func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) (*Result, error) {
-
 	if err := validResource(resource); err != nil {
 		return nil, err
 	}
@@ -258,8 +258,30 @@ func (m *Medplum) DeleteResource(id string, code codes_go_proto.ResourceTypeCode
 	return m.generateResult(httpResp)
 }
 
-func (m *Medplum) Search(rtc *codes_go_proto.ResourceTypeCode, query string) (interface{}, error) {
-	return nil, errors.New("not implemented")
+// Search will use the provided query to search resources and return a Bundle
+// resource type. If query is empty, Medplum will return all resources of the
+// provided type; if query is not empty, it must be a valid FHIR search query.
+//
+// Refer: https://hl7.org/fhir/search.html
+func (m *Medplum) Search(code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error) {
+	resourceName, err := getResourceNameFromTypeCode(code)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
+	}
+
+	req, err := http.NewRequest("GET", m.url(resourceName)+"?"+query, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create request: %s", err)
+	}
+
+	req.Header.Set("Content-Type", "application/fhir+json")
+
+	httpResp, err := m.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to send request: %s", err)
+	}
+
+	return m.generateResult(httpResp)
 }
 
 func (m *Medplum) url(resourceName string) string {
