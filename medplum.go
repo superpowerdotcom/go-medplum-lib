@@ -173,18 +173,34 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 	}, nil
 }
 
-func (m *Medplum) ReadResource(id string, rtc *codes_go_proto.ResourceTypeCode) (interface{}, error) {
+func (m *Medplum) ReadResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
 	if id == "" {
 		return nil, errors.New("id cannot be empty")
 	}
 
-	if err := validResourceCode(rtc); err != nil {
-		return nil, err
+	resourceName, err := getResourceNameFromTypeCode(code)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
 	}
 
-	fmt.Printf("%+v\n", rtc)
+	req, err := http.NewRequest("GET", m.url(resourceName)+"/"+id, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create POST request: %s", err)
+	}
 
-	return nil, errors.New("not implemented")
+	req.Header.Set("Content-Type", "application/fhir+json")
+
+	httpResp, err := m.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to send POST request: %s", err)
+	}
+
+	result, err := m.generateResult(httpResp)
+	if err != nil {
+		return nil, fmt.Errorf("unable to generate response: %s", err)
+	}
+
+	return result, nil
 }
 
 func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) error {
@@ -201,6 +217,25 @@ func (m *Medplum) Search(rtc *codes_go_proto.ResourceTypeCode, query string) (in
 
 func (m *Medplum) url(resourceName string) string {
 	return fmt.Sprintf("%s/fhir/R4/%s", m.opts.MedplumURL, resourceName)
+}
+
+func getResourceNameFromTypeCode(code codes_go_proto.ResourceTypeCode_Value) (string, error) {
+	name, exists := codes_go_proto.ResourceTypeCode_Value_name[int32(code)]
+	if !exists {
+		return "", fmt.Errorf("resource name not found for code: %d", code)
+	}
+
+	return normalizeResourceName(name), nil
+}
+
+func normalizeResourceName(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	s = strings.ToLower(s)
+
+	return strings.ToUpper(string(s[0])) + s[1:]
 }
 
 func getContainedResourceName(resource *cr.ContainedResource) (string, error) {
@@ -222,14 +257,6 @@ func getContainedResourceName(resource *cr.ContainedResource) (string, error) {
 	}
 
 	return result[1], nil
-}
-
-func validResourceCode(rtc *codes_go_proto.ResourceTypeCode) error {
-	if rtc == nil {
-		return errors.New("ResourceTypeCode cannot be nil")
-	}
-
-	return nil
 }
 
 func validateOptions(opts *Options) error {

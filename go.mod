@@ -3,10 +3,9 @@ module github.com/superpowerdotcom/go-medplum-lib
 go 1.22.0
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/google/fhir/go v0.7.4
-	github.com/superpowerdotcom/events v0.0.14
 	golang.org/x/oauth2 v0.22.0
-	google.golang.org/protobuf v1.33.0
 )
 
 require (
@@ -17,4 +16,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 )

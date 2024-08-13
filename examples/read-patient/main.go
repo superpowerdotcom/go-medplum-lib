@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 
 	dt "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	cr "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/patient_go_proto"
+	"github.com/google/fhir/go/proto/google/fhir/proto/stu3/codes_go_proto"
 
 	"github.com/superpowerdotcom/go-medplum-lib"
 )
@@ -40,9 +39,41 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("This is our patient ID: " + patientID)
+	fmt.Println("Created a patient with ID: " + patientID)
 
-	// TODO: Now get the patient by that ID
+	// Now read the patient
+	result, err := m.ReadResource(patientID, codes_go_proto.ResourceTypeCode_PATIENT)
+	if err != nil {
+		fmt.Println("Unable to read patient resource: " + err.Error())
+		os.Exit(1)
+	}
+
+	// Did it succeed?
+	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
+		fmt.Printf("Unable to read patient - unexpected response status code: %d\n", result.RawHTTPResponse.StatusCode)
+		os.Exit(1)
+	}
+
+	// Print patient info
+	patientResource := result.ContainedResource.GetPatient()
+
+	if patientResource == nil {
+		fmt.Println("Unexpected: patient resource is nil")
+		os.Exit(1)
+	}
+
+	if len(patientResource.Name) < 1 {
+		fmt.Println("Unexpected: patient resource has no name")
+		os.Exit(1)
+	}
+
+	fmt.Printf("[read] Patient Name: %s\n", patientResource.Name[0].Text.Value)
+
+	// Uncomment to see the raw result
+	//fmt.Printf("[raw result] ")
+	//spew.Dump(result) // Library for pretty printing complex data structures
+
+	os.Exit(0)
 }
 
 func createPatient(m *medplum.Medplum) (string, error) {
@@ -62,28 +93,20 @@ func createPatient(m *medplum.Medplum) (string, error) {
 	}
 
 	// Create it via medplum client
-	resp, err := m.CreateResource(context.Background(), patientCR)
+	result, err := m.CreateResource(context.Background(), patientCR)
 	if err != nil {
 		return "", errors.New("Unable to create patient resource: " + err.Error())
 
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", resp.StatusCode)
+	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
+		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponse.StatusCode)
 	}
 
-	defer resp.Body.Close()
-
-	respData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %s", err)
+	patientResource := result.ContainedResource.GetPatient()
+	if patientResource == nil {
+		return "", errors.New("unexpected: returned patient resource is nil")
 	}
 
-	respJSON := &ResponseJSON{}
-
-	if err := json.Unmarshal(respData, respJSON); err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %s", err)
-	}
-
-	return respJSON.ID, nil
+	return patientResource.Id.Value, nil
 }
