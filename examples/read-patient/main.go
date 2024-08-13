@@ -80,7 +80,7 @@ func createPatient(m *medplum.Medplum) (string, error) {
 	patient := &patient_go_proto.Patient{
 		Name: []*dt.HumanName{
 			{
-				Text: &dt.String{Value: "Foo Bar"},
+				Text: &dt.String{Value: "Read Example"},
 			},
 		},
 	}

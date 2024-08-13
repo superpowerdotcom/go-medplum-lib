@@ -32,7 +32,7 @@ func main() {
 		Id: &dt.Id{Value: "12345"}, // Will be ignored by server and a new ID will be generated
 		Name: []*dt.HumanName{
 			{
-				Text: &dt.String{Value: "Standup Boyz"},
+				Text: &dt.String{Value: "Create Patient"},
 			},
 		},
 	}

@@ -98,6 +98,7 @@ func New(opts *Options) (*Medplum, error) {
 	}, nil
 }
 
+// TODO: Use the ctx + update all methods to use it
 func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedResource) (*Result, error) {
 	if err := validResource(resource); err != nil {
 		return nil, err
@@ -108,7 +109,7 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 		return nil, fmt.Errorf("unable to get contained resource name: %s", err)
 	}
 
-	// Marshal contained resource oneof to JSON
+	// Marshal resource to JSON
 	marshaller, err := jsonformat.NewPrettyMarshaller(fhirversion.R4)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create proto -> json marshaler: %s", err)
@@ -122,14 +123,14 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 	// Send to Medplum API
 	req, err := http.NewRequest("POST", m.url(resourceName), bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("unable to create POST request: %s", err)
+		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
 
 	req.Header.Set("Content-Type", "application/fhir+json")
 
 	httpResp, err := m.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to send POST request: %s", err)
+		return nil, fmt.Errorf("unable to send request: %s", err)
 	}
 
 	result, err := m.generateResult(httpResp)
@@ -185,21 +186,55 @@ func (m *Medplum) ReadResource(id string, code codes_go_proto.ResourceTypeCode_V
 
 	req, err := http.NewRequest("GET", m.url(resourceName)+"/"+id, nil)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create POST request: %s", err)
+		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
 
 	req.Header.Set("Content-Type", "application/fhir+json")
 
 	httpResp, err := m.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to send POST request: %s", err)
+		return nil, fmt.Errorf("unable to send request: %s", err)
 	}
 
 	return m.generateResult(httpResp)
 }
 
-func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) error {
-	return errors.New("not implemented")
+func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) (*Result, error) {
+
+	if err := validResource(resource); err != nil {
+		return nil, err
+	}
+
+	resourceName, err := getContainedResourceName(resource)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get contained resource name: %s", err)
+	}
+
+	// Marshal resource to JSON
+	marshaller, err := jsonformat.NewPrettyMarshaller(fhirversion.R4)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create proto json marshaler: %s", err)
+	}
+
+	data, err := marshaller.Marshal(resource)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal resource to JSON: %s", err)
+	}
+
+	// Send to Medplum API
+	req, err := http.NewRequest("PUT", m.url(resourceName)+"/"+id, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, fmt.Errorf("unable to create request: %s", err)
+	}
+
+	req.Header.Set("Content-Type", "application/fhir+json")
+
+	httpResp, err := m.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to send request: %s", err)
+	}
+
+	return m.generateResult(httpResp)
 }
 
 func (m *Medplum) DeleteResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
@@ -210,14 +245,14 @@ func (m *Medplum) DeleteResource(id string, code codes_go_proto.ResourceTypeCode
 
 	req, err := http.NewRequest("DELETE", m.url(resourceName)+"/"+id, nil)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create DELETE request: %s", err)
+		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
 
 	req.Header.Set("Content-Type", "application/fhir+json")
 
 	httpResp, err := m.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to send DELETE request: %s", err)
+		return nil, fmt.Errorf("unable to send request: %s", err)
 	}
 
 	return m.generateResult(httpResp)
