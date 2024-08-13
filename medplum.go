@@ -195,20 +195,32 @@ func (m *Medplum) ReadResource(id string, code codes_go_proto.ResourceTypeCode_V
 		return nil, fmt.Errorf("unable to send POST request: %s", err)
 	}
 
-	result, err := m.generateResult(httpResp)
-	if err != nil {
-		return nil, fmt.Errorf("unable to generate response: %s", err)
-	}
-
-	return result, nil
+	return m.generateResult(httpResp)
 }
 
 func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) error {
 	return errors.New("not implemented")
 }
 
-func (m *Medplum) DeleteResource(id string, rtc *codes_go_proto.ResourceTypeCode) error {
-	return errors.New("not implemented")
+func (m *Medplum) DeleteResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+	resourceName, err := getResourceNameFromTypeCode(code)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
+	}
+
+	req, err := http.NewRequest("DELETE", m.url(resourceName)+"/"+id, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create DELETE request: %s", err)
+	}
+
+	req.Header.Set("Content-Type", "application/fhir+json")
+
+	httpResp, err := m.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to send DELETE request: %s", err)
+	}
+
+	return m.generateResult(httpResp)
 }
 
 func (m *Medplum) Search(rtc *codes_go_proto.ResourceTypeCode, query string) (interface{}, error) {
