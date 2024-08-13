@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	dt "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
@@ -11,6 +14,10 @@ import (
 
 	"github.com/superpowerdotcom/go-medplum-lib"
 )
+
+type ResponseJSON struct {
+	ID string `json:"id"`
+}
 
 func main() {
 	m, err := medplum.New(&medplum.Options{
@@ -27,12 +34,22 @@ func main() {
 
 	fmt.Println("Successfully authenticated")
 
-	// Create a patient
+	patientID, err := createPatient(m)
+	if err != nil {
+		fmt.Println("Unable to create patient resource: " + err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Println("This is our patient ID: " + patientID)
+
+	// TODO: Now get the patient by that ID
+}
+
+func createPatient(m *medplum.Medplum) (string, error) {
 	patient := &patient_go_proto.Patient{
-		Id: &dt.Id{Value: "12345"}, // Will be ignored by server and a new ID will be generated
 		Name: []*dt.HumanName{
 			{
-				Text: &dt.String{Value: "Bat Man"},
+				Text: &dt.String{Value: "Foo Bar"},
 			},
 		},
 	}
@@ -47,13 +64,26 @@ func main() {
 	// Create it via medplum client
 	resp, err := m.CreateResource(context.Background(), patientCR)
 	if err != nil {
-		fmt.Println("Unable to create patient resource: " + err.Error())
-		os.Exit(1)
+		return "", errors.New("Unable to create patient resource: " + err.Error())
+
 	}
 
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		fmt.Printf("Successfully created patient resource (StatusCode: %d)\n", resp.StatusCode)
-	} else {
-		fmt.Printf("Failed to create patient resource (StatusCode: %d)\n", resp.StatusCode)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", resp.StatusCode)
 	}
+
+	defer resp.Body.Close()
+
+	respData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %s", err)
+	}
+
+	respJSON := &ResponseJSON{}
+
+	if err := json.Unmarshal(respData, respJSON); err != nil {
+		return "", fmt.Errorf("failed to unmarshal response: %s", err)
+	}
+
+	return respJSON.ID, nil
 }

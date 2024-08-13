@@ -12,6 +12,7 @@ import (
 	"github.com/google/fhir/go/fhirversion"
 	"github.com/google/fhir/go/jsonformat"
 	cr "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
+	"github.com/google/fhir/go/proto/google/fhir/proto/stu3/codes_go_proto"
 	cc "golang.org/x/oauth2/clientcredentials"
 )
 
@@ -72,8 +73,6 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 		return nil, fmt.Errorf("unable to get contained resource name: %s", err)
 	}
 
-	fmt.Printf("Resource Type: '%s'\n", resourceName)
-
 	// Marshal contained resource oneof to JSON
 	marshaller, err := jsonformat.NewPrettyMarshaller(fhirversion.R4)
 	if err != nil {
@@ -84,8 +83,6 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal resource to JSON: %s", err)
 	}
-
-	fmt.Println("Would've posted the following: ", string(data))
 
 	// Send to Medplum API
 	req, err := http.NewRequest("POST", m.url(resourceName), bytes.NewBuffer(data))
@@ -103,20 +100,42 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 	return resp, nil
 }
 
-func (m *Medplum) url(resourceName string) string {
-	return fmt.Sprintf("%s/fhir/R4/%s", m.opts.MedplumURL, resourceName)
-}
+func (m *Medplum) ReadResource(id string, rtc *codes_go_proto.ResourceTypeCode) (interface{}, error) {
+	if id == "" {
+		return nil, errors.New("id cannot be empty")
+	}
 
-func (m *Medplum) ReadResource(resourceType, id string) (interface{}, error) {
+	if err := validResourceCode(rtc); err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("%+v\n", rtc)
+
 	return nil, errors.New("not implemented")
 }
 
-func (m *Medplum) UpdateResource(resourceType, id string, resource interface{}) error {
+func validResourceCode(rtc *codes_go_proto.ResourceTypeCode) error {
+	if rtc == nil {
+		return errors.New("ResourceTypeCode cannot be nil")
+	}
+
+	return nil
+}
+
+func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) error {
 	return errors.New("not implemented")
 }
 
-func (m *Medplum) DeleteResource(resourceType, id string) error {
+func (m *Medplum) DeleteResource(id string, rtc *codes_go_proto.ResourceTypeCode) error {
 	return errors.New("not implemented")
+}
+
+func (m *Medplum) Search(rtc *codes_go_proto.ResourceTypeCode, query string) (interface{}, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *Medplum) url(resourceName string) string {
+	return fmt.Sprintf("%s/fhir/R4/%s", m.opts.MedplumURL, resourceName)
 }
 
 func getContainedResourceName(resource *cr.ContainedResource) (string, error) {
