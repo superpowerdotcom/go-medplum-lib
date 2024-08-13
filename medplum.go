@@ -5,9 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/google/fhir/go/fhirversion"
 	"github.com/google/fhir/go/jsonformat"
@@ -17,24 +19,57 @@ import (
 )
 
 type Options struct {
-	// MedplumURL is the URL to the Medplum API
+	// Required: MedplumURL is the URL to the Medplum API
+	//
+	// Example: http://localhost:8103
 	MedplumURL string
 
-	// ClientID is the ID for the ClientApplication created in Medplum
+	// Required: ClientID is the ID for a ClientApplication created in Medplum
 	ClientID string
 
-	// ClientSecret is the secret for the ClientApplication created in Medplum
+	// Required: ClientSecret is the secret for a ClientApplication created in Medplum
 	ClientSecret string
 
-	// TokenURL is the URL to the token exchange endpoint
-	TokenURL string // ie. http://localhost:8103/oauth2/token
+	// Required: TokenURL is the URL to the token exchange endpoint
+	//
+	// Example: http://localhost:8103/oauth2/token
+	TokenURL string
 
-	// ClientCtx allows you to pass an optional context that can include a
-	// custom http.Client. The context will
+	// Optional: ClientCtx allows you to pass a context that can include a
+	// custom http.Client. Default: context.Background()
 	//
 	// Read more about this here: https://pkg.go.dev/golang.org/x/oauth2/clientcredentials#Config.Client
 	// Read about the oauth2.HTTPClient var: https://pkg.go.dev/golang.org/x/oauth2#pkg-variables
 	ClientCtx context.Context
+
+	// Optional: Timezone used when marshalling and unmarshalling responses from
+	// Medplum API.
+	//
+	// The name corresponds to a file in the IANA Time Zone database, such as
+	// "America/New_York". Default: "UTC".
+	Timezone string
+}
+
+// Result is a common "wrapper" struct that is returned from some of the public
+// methods in the Medplum library.
+type Result struct {
+	// ContainedResource is an FHIR "container" resource - it contains exactly
+	// one other resource inside of it. When Medplum responds, the response will
+	// be a ContainedResource and it is the responsibility of the caller to
+	// "extract" the contained resource within it.
+	//
+	// You can see an example of what's involved in extracting a contained
+	// resource in some of the examples in `./examples` dir.
+	ContainedResource *cr.ContainedResource
+
+	// All responses from Medplum will also include the "raw" HTTP response that
+	// the library receives from the Medplum API.
+	//
+	// This is useful if you need to inspect headers, status codes, read the
+	// body manually etc. It is especially useful if you do not need to extract
+	// the wrapped resource from the ContainedResource. For example, if you are
+	// deleting a resource, you might only want to check the status code.
+	RawHTTPResponse *http.Response
 }
 
 type Medplum struct {
@@ -63,7 +98,7 @@ func New(opts *Options) (*Medplum, error) {
 	}, nil
 }
 
-func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedResource) (*http.Response, error) {
+func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedResource) (*Result, error) {
 	if err := validResource(resource); err != nil {
 		return nil, err
 	}
@@ -92,12 +127,50 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 
 	req.Header.Set("Content-Type", "application/fhir+json")
 
-	resp, err := m.client.Do(req)
+	httpResp, err := m.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("unable to send POST request: %s", err)
 	}
 
-	return resp, nil
+	result, err := m.generateResult(httpResp)
+	if err != nil {
+		return nil, fmt.Errorf("unable to generate response: %s", err)
+	}
+
+	return result, nil
+}
+
+func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
+	if httpResp == nil {
+		return nil, errors.New("http response cannot be nil")
+	}
+
+	// Read the body so we can create a ContainedResource
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read response body: %s", err)
+	}
+
+	defer httpResp.Body.Close()
+
+	// Make sure to reset the body so that the caller can read it
+	httpResp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	// Unmarshal the response body into a ContainedResource
+	unmarshaller, err := jsonformat.NewUnmarshaller(m.opts.Timezone, fhirversion.R4)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create unmarshaler: %s", err)
+	}
+
+	containedResource, err := unmarshaller.UnmarshalR4(bodyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal response body: %s", err)
+	}
+
+	return &Result{
+		ContainedResource: containedResource,
+		RawHTTPResponse:   httpResp,
+	}, nil
 }
 
 func (m *Medplum) ReadResource(id string, rtc *codes_go_proto.ResourceTypeCode) (interface{}, error) {
@@ -112,14 +185,6 @@ func (m *Medplum) ReadResource(id string, rtc *codes_go_proto.ResourceTypeCode) 
 	fmt.Printf("%+v\n", rtc)
 
 	return nil, errors.New("not implemented")
-}
-
-func validResourceCode(rtc *codes_go_proto.ResourceTypeCode) error {
-	if rtc == nil {
-		return errors.New("ResourceTypeCode cannot be nil")
-	}
-
-	return nil
 }
 
 func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) error {
@@ -159,6 +224,14 @@ func getContainedResourceName(resource *cr.ContainedResource) (string, error) {
 	return result[1], nil
 }
 
+func validResourceCode(rtc *codes_go_proto.ResourceTypeCode) error {
+	if rtc == nil {
+		return errors.New("ResourceTypeCode cannot be nil")
+	}
+
+	return nil
+}
+
 func validateOptions(opts *Options) error {
 	if opts.MedplumURL == "" {
 		return errors.New("MedplumURL is required")
@@ -178,6 +251,10 @@ func validateOptions(opts *Options) error {
 
 	if opts.ClientCtx == nil {
 		opts.ClientCtx = context.Background()
+	}
+
+	if _, err := time.LoadLocation(opts.Timezone); err != nil {
+		return fmt.Errorf("invalid timezone: %s", err)
 	}
 
 	return nil
