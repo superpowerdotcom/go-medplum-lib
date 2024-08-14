@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
 	dt "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	cr "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
@@ -92,7 +91,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	spew.Dump(result)
+	// Did the request succeed?
+	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
+		fmt.Printf("unexpected response status code: %d\n", result.RawHTTPResponse.StatusCode)
+		os.Exit(1)
+	}
+
+	// We know that the returned resource will be a document ref
+	dr := result.ContainedResource.GetDocumentReference()
+	if dr == nil {
+		fmt.Println("unexpected response: not a document reference resource")
+		os.Exit(1)
+	}
+
+	fmt.Println("[created] Document Reference ID: " + dr.Id.Value)
+	fmt.Println("[created] Document Reference Subject: " + dr.Subject.GetPatientId().Value)
 }
 
 func createPatientResource(m *medplum.Medplum) (string, error) {
