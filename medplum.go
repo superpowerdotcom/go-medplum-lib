@@ -3,9 +3,11 @@ package medplum
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"reflect"
 	"strings"
@@ -36,18 +38,27 @@ type Options struct {
 	TokenURL string
 
 	// Optional: ClientCtx allows you to pass a context that can include a
-	// custom http.Client. Default: context.Background()
+	// custom http.Client.
 	//
 	// Read more about this here: https://pkg.go.dev/golang.org/x/oauth2/clientcredentials#Config.Client
 	// Read about the oauth2.HTTPClient var: https://pkg.go.dev/golang.org/x/oauth2#pkg-variables
+	//
+	// Default: context.Background()
 	ClientCtx context.Context
 
 	// Optional: Timezone used when marshalling and unmarshalling responses from
 	// Medplum API.
 	//
 	// The name corresponds to a file in the IANA Time Zone database, such as
-	// "America/New_York". Default: "UTC".
+	// "America/New_York".
+	//
+	// Default: "UTC".
 	Timezone string
+
+	// Optional: Whether to log errors (such as during unmarshal attempts).
+	//
+	// Default: false
+	LogErrors bool
 }
 
 // Result is a common "wrapper" struct that is returned from some of the public
@@ -58,9 +69,19 @@ type Result struct {
 	// be a ContainedResource and it is the responsibility of the caller to
 	// "extract" the contained resource within it.
 	//
+	// NOTE: It is possible for the jsonformat library to fail to unmarshal the
+	// Medplum response into a ContainedResource. To be able to handle this,
+	// make sure to check that ContainedResource is not nil. If it's nil, you
+	// can try using MapResource instead or look through the RawHTTPResponse.
+	//
 	// You can see an example of what's involved in extracting a contained
 	// resource in some of the examples in `./examples` dir.
 	ContainedResource *cr.ContainedResource
+
+	// MapResource is used as a "basic"/"last-resort" storage structure for
+	// storing responses from Medplum. If ContainedResource is nil, you can try
+	// using MapResource instead.
+	MapResource map[string]interface{}
 
 	// All responses from Medplum will also include the "raw" HTTP response that
 	// the library receives from the Medplum API.
@@ -126,7 +147,7 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
 
-	req.Header.Set("Content-Type", "application/fhir+json")
+	req.Header.Set("Content-Type", "image/fhir+json")
 
 	httpResp, err := m.client.Do(req)
 	if err != nil {
@@ -158,19 +179,35 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 	httpResp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	// Unmarshal the response body into a ContainedResource
-	unmarshaller, err := jsonformat.NewUnmarshallerWithoutValidation(m.opts.Timezone, fhirversion.R4)
+	unmarshaller, err := jsonformat.NewUnmarshaller(m.opts.Timezone, fhirversion.R4)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create unmarshaler: %s", err)
 	}
 
 	containedResource, err := unmarshaller.UnmarshalR4(bodyBytes)
 	if err != nil {
-		fmt.Println("bodyBytes: ", string(bodyBytes))
-		return nil, fmt.Errorf("unable to unmarshal response body: %s", err)
+		if m.opts.LogErrors {
+			log.Println("go-medplum-lib: unable to unmarshal response body using FHIR protos: " + err.Error())
+		}
+	}
+
+	// If we failed to unmarshal response, create an empty ContainedResource to
+	// prevent panics in caller code.
+	if containedResource == nil {
+		containedResource = &cr.ContainedResource{}
+	}
+
+	mapResource := make(map[string]interface{})
+
+	if err := json.Unmarshal(bodyBytes, &mapResource); err != nil {
+		if m.opts.LogErrors {
+			fmt.Println("go-medplum-lib: unable to unmarshal response body using map: " + err.Error())
+		}
 	}
 
 	return &Result{
 		ContainedResource: containedResource,
+		MapResource:       mapResource,
 		RawHTTPResponse:   httpResp,
 	}, nil
 }

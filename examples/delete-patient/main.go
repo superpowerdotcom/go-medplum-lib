@@ -15,10 +15,6 @@ import (
 	"github.com/superpowerdotcom/go-medplum-lib"
 )
 
-type ResponseJSON struct {
-	ID string `json:"id"`
-}
-
 func main() {
 	m, err := medplum.New(&medplum.Options{
 		MedplumURL:   "http://localhost:8103",
