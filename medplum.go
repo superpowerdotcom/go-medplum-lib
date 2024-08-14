@@ -169,15 +169,15 @@ func (m *Medplum) CreateResource(resource *cr.ContainedResource) (*Result, error
 		return nil, fmt.Errorf("unable to marshal resource to JSON: %s", err)
 	}
 
-	fmt.Println("This is what we're sending to medplum: ", string(data))
-
 	// Send to Medplum API
 	req, err := http.NewRequest("POST", m.url(resourceName), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
 
-	req.Header.Set("Content-Type", "image/fhir+json")
+	// It is incredibly important to set the content-type header correctly,
+	// otherwise Medplum API will return 400 errors.
+	req.Header.Set("Content-Type", "application/fhir+json")
 
 	httpResp, err := m.client.Do(req)
 	if err != nil {
@@ -306,8 +306,6 @@ func (m *Medplum) url(resourceName string) string {
 }
 
 func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
-	fmt.Println("generate called")
-
 	if httpResp == nil {
 		return nil, errors.New("http response cannot be nil")
 	}
