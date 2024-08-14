@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -52,7 +51,7 @@ func main() {
 	}
 
 	// Create the resource
-	result, err := m.CreateResource(context.Background(), crBinary)
+	result, err := m.CreateResource(crBinary)
 	if err != nil {
 		fmt.Println("unable to create resource: " + err.Error())
 		os.Exit(1)

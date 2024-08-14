@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -45,7 +44,7 @@ func main() {
 	}
 
 	// Create it via medplum client
-	result, err := m.CreateResource(context.Background(), patientCR)
+	result, err := m.CreateResource(patientCR)
 	if err != nil {
 		fmt.Println("Unable to create patient resource: " + err.Error())
 		os.Exit(1)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -87,7 +86,7 @@ func main() {
 	}
 
 	// Create the document reference resource
-	result, err := m.CreateResource(context.Background(), documentReferenceCR)
+	result, err := m.CreateResource(documentReferenceCR)
 	if err != nil {
 		fmt.Println("Unable to create document reference resource: " + err.Error())
 		os.Exit(1)
@@ -113,7 +112,7 @@ func createPatientResource(m *medplum.Medplum) (string, error) {
 	}
 
 	// Create it via medplum client
-	result, err := m.CreateResource(context.Background(), patientCR)
+	result, err := m.CreateResource(patientCR)
 	if err != nil {
 		return "", errors.New("Unable to create patient resource: " + err.Error())
 	}
