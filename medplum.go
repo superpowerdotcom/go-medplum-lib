@@ -9,18 +9,23 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"reflect"
-	"strings"
-	"time"
 
 	"github.com/google/fhir/go/fhirversion"
 	"github.com/google/fhir/go/jsonformat"
+	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
 	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
 	cr "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
-	"github.com/google/fhir/go/proto/google/fhir/proto/stu3/codes_go_proto"
-	cc "golang.org/x/oauth2/clientcredentials"
 )
+
+type IMedplum interface {
+	CreateResource(resource *cr.ContainedResource) (*Result, error)
+	CreateBinaryResource(data []byte, contentType string) (*Result, error)
+	UpdateResource(id string, resource *cr.ContainedResource) (*Result, error)
+	DeleteResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
+	ReadResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
+	Search(code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error)
+}
 
 type Options struct {
 	// Required: MedplumURL is the URL to the Medplum API
@@ -140,11 +145,10 @@ func (m *Medplum) CreateBinaryResource(data []byte, contentType string) (*Result
 		},
 	}
 
-	return m.CreateResource(context.Background(), resource)
+	return m.CreateResource(resource)
 }
 
-// TODO: Use the ctx + update all methods to use it
-func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedResource) (*Result, error) {
+func (m *Medplum) CreateResource(resource *cr.ContainedResource) (*Result, error) {
 	if err := validResource(resource); err != nil {
 		return nil, err
 	}
@@ -165,6 +169,8 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 		return nil, fmt.Errorf("unable to marshal resource to JSON: %s", err)
 	}
 
+	fmt.Println("This is what we're sending to medplum: ", string(data))
+
 	// Send to Medplum API
 	req, err := http.NewRequest("POST", m.url(resourceName), bytes.NewBuffer(data))
 	if err != nil {
@@ -184,56 +190,6 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 	}
 
 	return result, nil
-}
-
-func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
-	if httpResp == nil {
-		return nil, errors.New("http response cannot be nil")
-	}
-
-	// Read the body so we can create a ContainedResource
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read response body: %s", err)
-	}
-
-	defer httpResp.Body.Close()
-
-	// Make sure to reset the body so that the caller can read it
-	httpResp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-	// Unmarshal the response body into a ContainedResource
-	unmarshaller, err := jsonformat.NewUnmarshaller(m.opts.Timezone, fhirversion.R4)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create unmarshaler: %s", err)
-	}
-
-	containedResource, err := unmarshaller.UnmarshalR4(bodyBytes)
-	if err != nil {
-		if m.opts.LogErrors {
-			log.Println("go-medplum-lib: unable to unmarshal response body using FHIR protos: " + err.Error())
-		}
-	}
-
-	// If we failed to unmarshal response, create an empty ContainedResource to
-	// prevent panics in caller code.
-	if containedResource == nil {
-		containedResource = &cr.ContainedResource{}
-	}
-
-	mapResource := make(map[string]interface{})
-
-	if err := json.Unmarshal(bodyBytes, &mapResource); err != nil {
-		if m.opts.LogErrors {
-			fmt.Println("go-medplum-lib: unable to unmarshal response body using map: " + err.Error())
-		}
-	}
-
-	return &Result{
-		ContainedResource: containedResource,
-		MapResource:       mapResource,
-		RawHTTPResponse:   httpResp,
-	}, nil
 }
 
 func (m *Medplum) ReadResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
@@ -349,102 +305,56 @@ func (m *Medplum) url(resourceName string) string {
 	return fmt.Sprintf("%s/fhir/R4/%s", m.opts.MedplumURL, resourceName)
 }
 
-func getResourceNameFromTypeCode(code codes_go_proto.ResourceTypeCode_Value) (string, error) {
-	name, exists := codes_go_proto.ResourceTypeCode_Value_name[int32(code)]
-	if !exists {
-		return "", fmt.Errorf("resource name not found for code: %d", code)
+func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
+	fmt.Println("generate called")
+
+	if httpResp == nil {
+		return nil, errors.New("http response cannot be nil")
 	}
 
-	return normalizeResourceName(name), nil
-}
-
-func normalizeResourceName(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	s = strings.ToLower(s)
-
-	return strings.ToUpper(string(s[0])) + s[1:]
-}
-
-func getContainedResourceName(resource *cr.ContainedResource) (string, error) {
-	if err := validResource(resource); err != nil {
-		return "", err
-	}
-
-	res := resource.GetOneofResource()
-	resourceType := reflect.TypeOf(res).Elem().Name()
-
-	if resourceType == "" {
-		return "", errors.New("resource name lookup resulted in an empty name")
-	}
-
-	result := strings.Split(resourceType, "_")
-
-	if len(result) != 2 {
-		return "", fmt.Errorf("resource name lookup resulted in unexpected name format (expected 2, got %d)", len(result))
-	}
-
-	return result[1], nil
-}
-
-func validateOptions(opts *Options) error {
-	if opts.MedplumURL == "" {
-		return errors.New("MedplumURL is required")
-	}
-
-	if opts.ClientID == "" {
-		return errors.New("ClientID is required")
-	}
-
-	if opts.ClientSecret == "" {
-		return errors.New("ClientSecret is required")
-	}
-
-	if opts.TokenURL == "" {
-		return errors.New("TokenEndpoint is required")
-	}
-
-	if opts.ClientCtx == nil {
-		opts.ClientCtx = context.Background()
-	}
-
-	if _, err := time.LoadLocation(opts.Timezone); err != nil {
-		return fmt.Errorf("invalid timezone: %s", err)
-	}
-
-	return nil
-}
-
-func validResource(resource *cr.ContainedResource) error {
-	if resource == nil {
-		return ErrResourceCannotBeNil
-	}
-
-	// Check that the contained resource has a non-nil oneof
-	if resource.OneofResource == nil {
-		return ErrInvalidResource
-	}
-
-	return nil
-}
-
-func auth(clientID, clientSecret, tokenURL string, clientCtx context.Context) (*http.Client, error) {
-	cfg := &cc.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		TokenURL:     tokenURL,
-	}
-
-	token, err := cfg.Token(clientCtx)
+	// Read the body so we can create a ContainedResource
+	bodyBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %s", err)
+		return nil, fmt.Errorf("unable to read response body: %s", err)
 	}
 
-	if !token.Valid() {
-		return nil, errors.New("token is invalid")
+	defer httpResp.Body.Close()
+
+	// Make sure to reset the body so that the caller can read it
+	httpResp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	// Unmarshal the response body into a ContainedResource
+	unmarshaller, err := jsonformat.NewUnmarshallerWithoutValidation(m.opts.Timezone, fhirversion.R4)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create unmarshaler: %s", err)
 	}
 
-	return cfg.Client(clientCtx), nil
+	containedResource, err := unmarshaller.UnmarshalR4(bodyBytes)
+	if err != nil {
+		if m.opts.LogErrors {
+			log.Println("go-medplum-lib: unable to unmarshal response body using FHIR protos: " + err.Error())
+		}
+	}
+
+	// If we failed to unmarshal response, create an empty ContainedResource to
+	// prevent panics in caller code.
+	if containedResource == nil {
+		containedResource = &cr.ContainedResource{}
+	}
+
+	mapResource := make(map[string]interface{})
+
+	if err := json.Unmarshal(bodyBytes, &mapResource); err != nil {
+		if m.opts.LogErrors {
+			fmt.Println("go-medplum-lib: unable to unmarshal response body using map: " + err.Error())
+		}
+	}
+
+	fmt.Println("bodyBytes: ", string(bodyBytes))
+
+	return &Result{
+		ContainedResource: containedResource,
+		MapResource:       mapResource,
+		RawHTTPResponse:   httpResp,
+	}, nil
 }
