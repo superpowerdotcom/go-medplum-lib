@@ -15,6 +15,8 @@ import (
 
 	"github.com/google/fhir/go/fhirversion"
 	"github.com/google/fhir/go/jsonformat"
+	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
+	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
 	cr "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 	"github.com/google/fhir/go/proto/google/fhir/proto/stu3/codes_go_proto"
 	cc "golang.org/x/oauth2/clientcredentials"
@@ -117,6 +119,28 @@ func New(opts *Options) (*Medplum, error) {
 		client: client,
 		opts:   opts,
 	}, nil
+}
+
+// CreateBinaryResource is a convenience method for creating a Binary resource
+func (m *Medplum) CreateBinaryResource(data []byte, contentType string) (*Result, error) {
+	if data == nil {
+		return nil, errors.New("data cannot be nil")
+	}
+
+	if contentType == "" {
+		return nil, errors.New("contentType cannot be empty")
+	}
+
+	resource := &cr.ContainedResource{
+		OneofResource: &cr.ContainedResource_Binary{
+			Binary: &binary_go_proto.Binary{
+				ContentType: &binary_go_proto.Binary_ContentTypeCode{Value: contentType},
+				Data:        &datatypes_go_proto.Base64Binary{Value: data},
+			},
+		},
+	}
+
+	return m.CreateResource(context.Background(), resource)
 }
 
 // TODO: Use the ctx + update all methods to use it
