@@ -42,7 +42,7 @@ func main() {
 	fmt.Scanln()
 
 	// Now delete the patient
-	result, err := m.DeleteResource(patientID, codes_go_proto.ResourceTypeCode_PATIENT)
+	result, err := m.DeleteResource(nil, patientID, codes_go_proto.ResourceTypeCode_PATIENT)
 	if err != nil {
 		fmt.Println("Unable to delete patient resource: " + err.Error())
 		os.Exit(1)
@@ -60,7 +60,7 @@ func main() {
 	time.Sleep(time.Second)
 
 	// Fetching the patient should fail
-	result, err = m.ReadResource(patientID, codes_go_proto.ResourceTypeCode_PATIENT)
+	result, err = m.ReadResource(nil, patientID, codes_go_proto.ResourceTypeCode_PATIENT)
 	if err != nil {
 		fmt.Printf("Unexpected error fetching patient: %s\n", err)
 		os.Exit(1)
@@ -94,7 +94,7 @@ func createPatient(m *medplum.Medplum) (string, error) {
 	}
 
 	// Create it via medplum client
-	result, err := m.CreateResource(patientCR)
+	result, err := m.CreateResource(nil, patientCR)
 	if err != nil {
 		return "", errors.New("Unable to create patient resource: " + err.Error())
 

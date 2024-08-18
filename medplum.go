@@ -16,15 +16,16 @@ import (
 	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
 	cr "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 type IMedplum interface {
-	CreateResource(resource *cr.ContainedResource) (*Result, error)
-	CreateBinaryResource(data []byte, contentType string) (*Result, error)
-	UpdateResource(id string, resource *cr.ContainedResource) (*Result, error)
-	DeleteResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
-	ReadResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
-	Search(code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error)
+	CreateResource(ctx context.Context, resource *cr.ContainedResource) (*Result, error)
+	CreateBinaryResource(ctx context.Context, data []byte, contentType string) (*Result, error)
+	UpdateResource(ctx context.Context, id string, resource *cr.ContainedResource) (*Result, error)
+	DeleteResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
+	ReadResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
+	Search(ctx context.Context, code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error)
 }
 
 type Options struct {
@@ -127,7 +128,12 @@ func New(opts *Options) (*Medplum, error) {
 }
 
 // CreateBinaryResource is a convenience method for creating a Binary resource
-func (m *Medplum) CreateBinaryResource(data []byte, contentType string) (*Result, error) {
+func (m *Medplum) CreateBinaryResource(ctx context.Context, data []byte, contentType string) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.CreateBinaryResource")
+		defer segment.End()
+	}
+
 	if data == nil {
 		return nil, errors.New("data cannot be nil")
 	}
@@ -145,10 +151,15 @@ func (m *Medplum) CreateBinaryResource(data []byte, contentType string) (*Result
 		},
 	}
 
-	return m.CreateResource(resource)
+	return m.CreateResource(ctx, resource)
 }
 
-func (m *Medplum) CreateResource(resource *cr.ContainedResource) (*Result, error) {
+func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedResource) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.CreateResource")
+		defer segment.End()
+	}
+
 	if err := validResource(resource); err != nil {
 		return nil, err
 	}
@@ -192,7 +203,12 @@ func (m *Medplum) CreateResource(resource *cr.ContainedResource) (*Result, error
 	return result, nil
 }
 
-func (m *Medplum) ReadResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+func (m *Medplum) ReadResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.ReadResource")
+		defer segment.End()
+	}
+
 	if id == "" {
 		return nil, errors.New("id cannot be empty")
 	}
@@ -217,7 +233,12 @@ func (m *Medplum) ReadResource(id string, code codes_go_proto.ResourceTypeCode_V
 	return m.generateResult(httpResp)
 }
 
-func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) (*Result, error) {
+func (m *Medplum) UpdateResource(ctx context.Context, id string, resource *cr.ContainedResource) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.UpdateResource")
+		defer segment.End()
+	}
+
 	if err := validResource(resource); err != nil {
 		return nil, err
 	}
@@ -254,7 +275,12 @@ func (m *Medplum) UpdateResource(id string, resource *cr.ContainedResource) (*Re
 	return m.generateResult(httpResp)
 }
 
-func (m *Medplum) DeleteResource(id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+func (m *Medplum) DeleteResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.DeleteResource")
+		defer segment.End()
+	}
+
 	resourceName, err := getResourceNameFromTypeCode(code)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
@@ -280,7 +306,12 @@ func (m *Medplum) DeleteResource(id string, code codes_go_proto.ResourceTypeCode
 // provided type; if query is not empty, it must be a valid FHIR search query.
 //
 // Refer: https://hl7.org/fhir/search.html
-func (m *Medplum) Search(code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error) {
+func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.Search")
+		defer segment.End()
+	}
+
 	resourceName, err := getResourceNameFromTypeCode(code)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
@@ -347,8 +378,6 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 			fmt.Println("go-medplum-lib: unable to unmarshal response body using map: " + err.Error())
 		}
 	}
-
-	fmt.Println("bodyBytes: ", string(bodyBytes))
 
 	return &Result{
 		ContainedResource: containedResource,

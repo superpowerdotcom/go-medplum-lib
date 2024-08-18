@@ -85,7 +85,7 @@ func main() {
 	}
 
 	// Create the document reference resource
-	result, err := m.CreateResource(documentReferenceCR)
+	result, err := m.CreateResource(nil, documentReferenceCR)
 	if err != nil {
 		fmt.Println("Unable to create document reference resource: " + err.Error())
 		os.Exit(1)
@@ -125,7 +125,7 @@ func createPatientResource(m *medplum.Medplum) (string, error) {
 	}
 
 	// Create it via medplum client
-	result, err := m.CreateResource(patientCR)
+	result, err := m.CreateResource(nil, patientCR)
 	if err != nil {
 		return "", errors.New("Unable to create patient resource: " + err.Error())
 	}
@@ -150,7 +150,7 @@ func createBinaryResource(m *medplum.Medplum) (string, string, error) {
 	}
 
 	// Create binary resource with convenience method
-	result, err := m.CreateBinaryResource(data, "image/png")
+	result, err := m.CreateBinaryResource(nil, data, "image/png")
 	if err != nil {
 		return "", "", errors.New("unable to create binary resource: " + err.Error())
 	}
