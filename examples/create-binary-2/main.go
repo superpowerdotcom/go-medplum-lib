@@ -30,7 +30,7 @@ func main() {
 	}
 
 	// Create binary resource with convenience method
-	result, err := m.CreateBinaryResource(data, "image/png")
+	result, err := m.CreateBinaryResource(nil, data, "image/png")
 	if err != nil {
 		fmt.Println("Unable to create binary resource: " + err.Error())
 		os.Exit(1)

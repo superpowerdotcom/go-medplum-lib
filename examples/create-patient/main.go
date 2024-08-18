@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// Create it via medplum client
-	result, err := m.CreateResource(patientCR)
+	result, err := m.CreateResource(nil, patientCR)
 	if err != nil {
 		fmt.Println("Unable to create patient resource: " + err.Error())
 		os.Exit(1)

@@ -13,10 +13,6 @@ import (
 	"github.com/superpowerdotcom/go-medplum-lib"
 )
 
-type ResponseJSON struct {
-	ID string `json:"id"`
-}
-
 func main() {
 	m, err := medplum.New(&medplum.Options{
 		MedplumURL:   "http://localhost:8103",
@@ -65,7 +61,7 @@ func main() {
 		},
 	}
 
-	result, err := m.UpdateResource(patientID, patientCR)
+	result, err := m.UpdateResource(nil, patientID, patientCR)
 	if err != nil {
 		fmt.Println("Unexpected error updating resource: " + err.Error())
 		os.Exit(1)
@@ -99,7 +95,7 @@ func createPatient(m *medplum.Medplum, patient *patient_go_proto.Patient) (strin
 	}
 
 	// Create it via medplum client
-	result, err := m.CreateResource(patientCR)
+	result, err := m.CreateResource(nil, patientCR)
 	if err != nil {
 		return "", "", errors.New("Unable to create patient resource: " + err.Error())
 

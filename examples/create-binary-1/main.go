@@ -51,7 +51,7 @@ func main() {
 	}
 
 	// Create the resource
-	result, err := m.CreateResource(crBinary)
+	result, err := m.CreateResource(nil, crBinary)
 	if err != nil {
 		fmt.Println("unable to create resource: " + err.Error())
 		os.Exit(1)
