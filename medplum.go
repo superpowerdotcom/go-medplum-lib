@@ -40,9 +40,9 @@ type Options struct {
 	// Required: ClientSecret is the secret for a ClientApplication created in Medplum
 	ClientSecret string
 
-	// Required: TokenURL is the URL to the token exchange endpoint
+	// Optional: TokenURL is the URL to the token exchange endpoint
 	//
-	// Example: http://localhost:8103/oauth2/token
+	// Default: $MedplumURL + "/oauth2/token"
 	TokenURL string
 
 	// Optional: ClientCtx allows you to pass a context that can include a
@@ -317,9 +317,15 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
 	}
 
-	req, err := http.NewRequest("GET", m.url(resourceName)+"?"+query, nil)
+	fullURL := m.url(resourceName)
+
+	if query != "" {
+		fullURL += "?" + query
+	}
+
+	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create request: %s", err)
+		return nil, fmt.Errorf("unable to create request for URL '%s': %s", fullURL, err)
 	}
 
 	req.Header.Set("Content-Type", "application/fhir+json")
