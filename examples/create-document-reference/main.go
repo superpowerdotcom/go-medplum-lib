@@ -19,7 +19,6 @@ func main() {
 		MedplumURL:   "http://localhost:8103",
 		ClientID:     "3008218e-5de9-4398-a987-ca393e3e64b0",
 		ClientSecret: "1b6b7708423fa6cc589d2996e40d35bc2ba38d6af366e16660bcfcecb5438896",
-		TokenURL:     "http://localhost:8103/oauth2/token",
 	})
 
 	if err != nil {

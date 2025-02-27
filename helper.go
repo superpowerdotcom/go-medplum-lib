@@ -24,13 +24,16 @@ func getResourceNameFromTypeCode(code codes_go_proto.ResourceTypeCode_Value) (st
 }
 
 func normalizeResourceName(s string) string {
-	if len(s) == 0 {
+	if s == "" {
 		return s
 	}
 
-	s = strings.ToLower(s)
+	parts := strings.Split(strings.ToLower(s), "_")
+	for i, v := range parts {
+		parts[i] = strings.ToUpper(v[:1]) + v[1:]
+	}
 
-	return strings.ToUpper(string(s[0])) + s[1:]
+	return strings.Join(parts, "")
 }
 
 func getContainedResourceName(resource *cr.ContainedResource) (string, error) {
@@ -68,7 +71,7 @@ func validateOptions(opts *Options) error {
 	}
 
 	if opts.TokenURL == "" {
-		return errors.New("TokenEndpoint is required")
+		opts.TokenURL = fmt.Sprintf("%s/oauth2/token", opts.MedplumURL)
 	}
 
 	if opts.ClientCtx == nil {
