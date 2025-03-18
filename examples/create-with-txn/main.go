@@ -4,17 +4,28 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
+	c_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
 	dt_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	bcr_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 	cp_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/care_plan_go_proto"
 	g_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/goal_go_proto"
-	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/patient_go_proto"
-	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/valuesets_go_proto"
+	p_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/patient_go_proto"
+	vs_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/valuesets_go_proto"
 	"github.com/pkg/errors"
 
 	"github.com/superpowerdotcom/go-medplum-lib"
 )
+
+// Transactions allow you to bundle multiple operations into a single, atomic
+// request. If one of the operations fails, the entire transaction will fail and
+// will be rolled back.
+//
+// Medplum will also automatically replace reference IDs but you MUST use the
+// "urn:uuid:$uuid" format in FullURL and Reference_Uri fields.
+//
+// Read more about Medplum transactions here:
+//
+// https://www.medplum.com/docs/migration/migration-pipelines#using-transactions-for-data-integrity
 
 func main() {
 	m, err := medplum.New(&medplum.Options{
@@ -39,14 +50,13 @@ func main() {
 
 	// Create Goals
 	goal1 := &g_gp.Goal{
-		Id: &dt_gp.Id{Value: "temporary-goal-1"},
 		Subject: &dt_gp.Reference{
 			Reference: &dt_gp.Reference_PatientId{
 				PatientId: &dt_gp.ReferenceId{Value: dummyPatient.Id.Value},
 			},
 		},
 		LifecycleStatus: &g_gp.Goal_LifecycleStatusCode{
-			Value: codes_go_proto.GoalLifecycleStatusCode_ACTIVE,
+			Value: c_gp.GoalLifecycleStatusCode_ACTIVE,
 		},
 		Description: &dt_gp.CodeableConcept{
 			Text: &dt_gp.String{Value: "Increase daily activity"},
@@ -54,14 +64,13 @@ func main() {
 	}
 
 	goal2 := &g_gp.Goal{
-		Id: &dt_gp.Id{Value: "temporary-goal-2"},
 		Subject: &dt_gp.Reference{
 			Reference: &dt_gp.Reference_PatientId{
 				PatientId: &dt_gp.ReferenceId{Value: dummyPatient.Id.Value},
 			},
 		},
 		LifecycleStatus: &g_gp.Goal_LifecycleStatusCode{
-			Value: codes_go_proto.GoalLifecycleStatusCode_ACTIVE,
+			Value: c_gp.GoalLifecycleStatusCode_ACTIVE,
 		},
 		Description: &dt_gp.CodeableConcept{
 			Text: &dt_gp.String{Value: "Improve nutrition"},
@@ -70,32 +79,39 @@ func main() {
 
 	// Create CarePlan referencing the Goals
 	carePlan := &cp_gp.CarePlan{
-		Id: &dt_gp.Id{Value: "temporary-careplan"},
 		Subject: &dt_gp.Reference{
 			Reference: &dt_gp.Reference_PatientId{
 				PatientId: &dt_gp.ReferenceId{Value: dummyPatient.Id.Value},
 			},
 		},
 		Status: &cp_gp.CarePlan_StatusCode{
-			Value: codes_go_proto.RequestStatusCode_DRAFT,
+			Value: c_gp.RequestStatusCode_DRAFT,
 		},
 		Intent: &cp_gp.CarePlan_IntentCode{
-			Value: valuesets_go_proto.CarePlanIntentValueSet_PLAN,
+			Value: vs_gp.CarePlanIntentValueSet_PLAN,
 		},
 		Goal: []*dt_gp.Reference{
-			{Reference: &dt_gp.Reference_GoalId{GoalId: &dt_gp.ReferenceId{Value: "temporary-goal-1"}}},
-			{Reference: &dt_gp.Reference_GoalId{GoalId: &dt_gp.ReferenceId{Value: "temporary-goal-2"}}},
+			// !!! IMPORTANT !!!
+			//
+			// 1. Medplum WILL replace the IDs for the references BUT you MUST
+			//    use the "urn:uuid:$uuid" format for references.
+			// 2. You MUST use Reference_Uri - if not, proto lib will add an
+			//    additional "$Resource/" prefix to the reference (you will end
+			//    up with "Goal/Goal/$uuid" instead of "Goal/$uuid").
+			{Reference: &dt_gp.Reference_Uri{Uri: &dt_gp.String{Value: "urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f1"}}},
+			{Reference: &dt_gp.Reference_Uri{Uri: &dt_gp.String{Value: "urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f2"}}},
 		},
 	}
 
-	// Construct Bundle
+	// Construct Bundle with urn:uuid references
 	bundle := &bcr_gp.Bundle{
 		Type: &bcr_gp.Bundle_TypeCode{
-			Value: codes_go_proto.BundleTypeCode_TRANSACTION,
+			Value: c_gp.BundleTypeCode_TRANSACTION,
 		},
 		Entry: []*bcr_gp.Bundle_Entry{
 			{
-				FullUrl: &dt_gp.Uri{Value: "temporary-goal-1"},
+				// URL will be replaced by Medplum with the real ID in refs
+				FullUrl: &dt_gp.Uri{Value: "urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f1"},
 				Resource: &bcr_gp.ContainedResource{
 					OneofResource: &bcr_gp.ContainedResource_Goal{
 						Goal: goal1,
@@ -103,13 +119,14 @@ func main() {
 				},
 				Request: &bcr_gp.Bundle_Entry_Request{
 					Method: &bcr_gp.Bundle_Entry_Request_MethodCode{
-						Value: codes_go_proto.HTTPVerbCode_POST,
+						Value: c_gp.HTTPVerbCode_POST,
 					},
 					Url: &dt_gp.Uri{Value: "Goal"},
 				},
 			},
 			{
-				FullUrl: &dt_gp.Uri{Value: "temporary-goal-2"},
+				// URL will be replaced by Medplum with the real ID in refs
+				FullUrl: &dt_gp.Uri{Value: "urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f2"},
 				Resource: &bcr_gp.ContainedResource{
 					OneofResource: &bcr_gp.ContainedResource_Goal{
 						Goal: goal2,
@@ -117,13 +134,13 @@ func main() {
 				},
 				Request: &bcr_gp.Bundle_Entry_Request{
 					Method: &bcr_gp.Bundle_Entry_Request_MethodCode{
-						Value: codes_go_proto.HTTPVerbCode_POST,
+						Value: c_gp.HTTPVerbCode_POST,
 					},
 					Url: &dt_gp.Uri{Value: "Goal"},
 				},
 			},
 			{
-				FullUrl: &dt_gp.Uri{Value: "temporary-careplan"},
+
 				Resource: &bcr_gp.ContainedResource{
 					OneofResource: &bcr_gp.ContainedResource_CarePlan{
 						CarePlan: carePlan,
@@ -131,7 +148,7 @@ func main() {
 				},
 				Request: &bcr_gp.Bundle_Entry_Request{
 					Method: &bcr_gp.Bundle_Entry_Request_MethodCode{
-						Value: codes_go_proto.HTTPVerbCode_POST,
+						Value: c_gp.HTTPVerbCode_POST,
 					},
 					Url: &dt_gp.Uri{Value: "CarePlan"},
 				},
@@ -154,9 +171,9 @@ func main() {
 	medplum.PrettyPrintResult(result)
 }
 
-func createDummyPatient(m *medplum.Medplum, firstName, lastName, email string) (*patient_go_proto.Patient, error) {
+func createDummyPatient(m *medplum.Medplum, firstName, lastName, email string) (*p_gp.Patient, error) {
 	// Create a patient
-	patient := &patient_go_proto.Patient{
+	patient := &p_gp.Patient{
 		Name: []*dt_gp.HumanName{
 			{
 				Text: &dt_gp.String{Value: firstName + " " + lastName},
@@ -165,7 +182,7 @@ func createDummyPatient(m *medplum.Medplum, firstName, lastName, email string) (
 		Telecom: []*dt_gp.ContactPoint{
 			{
 				System: &dt_gp.ContactPoint_SystemCode{
-					Value: codes_go_proto.ContactPointSystemCode_EMAIL,
+					Value: c_gp.ContactPointSystemCode_EMAIL,
 				},
 				Value: &dt_gp.String{Value: email},
 			},
@@ -185,17 +202,8 @@ func createDummyPatient(m *medplum.Medplum, firstName, lastName, email string) (
 		return nil, errors.Wrap(err, "Unable to create patient resource")
 	}
 
-	if result == nil {
-		return nil, errors.Wrap(err, "Result is nil - something went wrong")
-	}
-
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		fmt.Printf("Unable to create user (received %d status code)\n", result.RawHTTPResponse.StatusCode)
-		return nil, fmt.Errorf("received non-2xx status code during create: %d", result.RawHTTPResponse.StatusCode)
-	}
-
-	if result.ContainedResource == nil || result.ContainedResource.GetPatient() == nil {
-		return nil, errors.New("unexpected containedResponse or patient resource is nil")
+	if result == nil || result.ContainedResource == nil || result.ContainedResource.GetPatient() == nil {
+		return nil, errors.New("unexpected response - patient resource is nil")
 	}
 
 	return result.ContainedResource.GetPatient(), nil
