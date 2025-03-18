@@ -24,6 +24,7 @@ By leveraging Google’s FHIR Protobufs, developers can manage FHIR resources pr
 * **Error Reduction**: Eliminates common mistakes in hand-crafting FHIR JSON, ensuring compliance with the FHIR standard.
 * **Search and Query Support**: Perform complex FHIR-compliant searches and queries with ease.
 * **Support for Binary Resources**: Upload and manage binary data like PDFs and images associated with FHIR resources.
+* **Support for Transactions**: Atomically create resources and their refs.
 
 ## Installation
 
@@ -105,7 +106,9 @@ func main() {
 
 ## Advanced Usage
 
-For more advanced usage, such as handling binary resources and linking them to `DocumentReference`, refer to the detailed examples in the [./examples](./examples) directory.
+For more advanced usage, such as handling binary resources and linking them to 
+`DocumentReference`, how to perform transactions and more, refer to the detailed
+examples in the [./examples](./examples) directory.
 
 ## Contributing
 
