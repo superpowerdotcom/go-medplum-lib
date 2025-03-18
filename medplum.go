@@ -26,6 +26,8 @@ type IMedplum interface {
 	DeleteResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
 	ReadResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
 	Search(ctx context.Context, code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error)
+	ExecuteBatch(ctx context.Context, resource *cr.ContainedResource) (*Result, error)
+	Post(ctx context.Context, resource *cr.ContainedResource, endpoint ...string) (*Result, error)
 }
 
 type Options struct {
@@ -107,8 +109,10 @@ type Medplum struct {
 }
 
 var (
-	ErrResourceCannotBeNil = errors.New("resource cannot be nil")
-	ErrInvalidResource     = errors.New("invalid resource")
+	ErrResourceCannotBeNil      = errors.New("resource cannot be nil")
+	ErrInvalidResource          = errors.New("invalid resource")
+	ErrBundleCannotBeNil        = errors.New("bundle cannot be nil")
+	ErrBundleEntryCannotBeEmpty = errors.New("bundle entry cannot be empty")
 )
 
 func New(opts *Options) (*Medplum, error) {
@@ -169,38 +173,7 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 		return nil, fmt.Errorf("unable to get contained resource name: %s", err)
 	}
 
-	// Marshal resource to JSON
-	marshaller, err := jsonformat.NewPrettyMarshaller(fhirversion.R4)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create proto -> json marshaler: %s", err)
-	}
-
-	data, err := marshaller.Marshal(resource)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal resource to JSON: %s", err)
-	}
-
-	// Send to Medplum API
-	req, err := http.NewRequest("POST", m.url(resourceName), bytes.NewBuffer(data))
-	if err != nil {
-		return nil, fmt.Errorf("unable to create request: %s", err)
-	}
-
-	// It is incredibly important to set the content-type header correctly,
-	// otherwise Medplum API will return 400 errors.
-	req.Header.Set("Content-Type", "application/fhir+json")
-
-	httpResp, err := m.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to send request: %s", err)
-	}
-
-	result, err := m.generateResult(httpResp)
-	if err != nil {
-		return nil, fmt.Errorf("unable to generate response: %s", err)
-	}
-
-	return result, nil
+	return m.Post(ctx, resource, resourceName)
 }
 
 func (m *Medplum) ReadResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
@@ -336,6 +309,136 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 	}
 
 	return m.generateResult(httpResp)
+}
+
+func (m *Medplum) ExecuteBatch(ctx context.Context, resource *cr.ContainedResource) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.ExecuteBatch")
+		defer segment.End()
+	}
+
+	return m.Post(ctx, resource)
+}
+
+// Post is a generic method that will perform an HTTP POST to the Medplum API.
+//
+// NOTE: If "endpoint" is provided - only the first element will be used for
+// constructing the URL that the client will POST to.
+func (m *Medplum) Post(ctx context.Context, resource *cr.ContainedResource, endpoint ...string) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.Post")
+		defer segment.End()
+	}
+
+	if err := validResource(resource); err != nil {
+		return nil, errors.New("resource validation failed: " + err.Error())
+	}
+
+	// Marshal resource to JSON
+	marshaller, err := jsonformat.NewPrettyMarshaller(fhirversion.R4)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create proto -> json marshaler: %s", err)
+	}
+
+	data, err := marshaller.Marshal(resource)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal resource to JSON: %s", err)
+	}
+
+	fullURL := m.opts.MedplumURL + "/fhir/R4"
+
+	if len(endpoint) > 0 {
+		fullURL += "/" + endpoint[0]
+	}
+
+	// Send to Medplum API
+	req, err := http.NewRequest("POST", fullURL, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, fmt.Errorf("unable to create request: %s", err)
+	}
+
+	// It is incredibly important to set the content-type header correctly,
+	// otherwise Medplum API will return 400 errors.
+	req.Header.Set("Content-Type", "application/fhir+json")
+
+	httpResp, err := m.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to send request: %s", err)
+	}
+
+	result, err := m.generateResult(httpResp)
+	if err != nil {
+		return nil, fmt.Errorf("unable to generate response: %s", err)
+	}
+
+	return result, nil
+}
+
+// PrettyPrintResult formats and displays the Medplum Result
+func PrettyPrintResult(result *Result) {
+	if result == nil {
+		fmt.Println("Result is nil")
+		return
+	}
+
+	fmt.Println("\n=== Medplum Response ===")
+
+	// Display ContainedResource if available
+	if result.ContainedResource != nil {
+		fmt.Println("\n[Contained Resource]:")
+
+		// Marshal resource to JSON
+		marshaller, err := jsonformat.NewPrettyMarshaller(fhirversion.R4)
+		if err != nil {
+			fmt.Printf("[ERROR] Unable to create proto -> json marshaler: %s\n", err)
+		}
+
+		data, err := marshaller.Marshal(result.ContainedResource)
+		if err != nil {
+			fmt.Printf("[ERROR] Unable to marshal ContainedResource to JSON: %s\n", err)
+		}
+
+		if err == nil {
+			var prettyJSON map[string]interface{}
+			if err := json.Unmarshal(data, &prettyJSON); err == nil {
+				formatted, _ := json.MarshalIndent(prettyJSON, "", "  ")
+				fmt.Println(string(formatted))
+			} else {
+				fmt.Println("[ERROR] Unable to format ContainedResource")
+			}
+		} else {
+			fmt.Println("[ERROR] Failed to Marshal ContainedResource")
+		}
+	} else {
+		fmt.Println("[WARNING] ContainedResource is nil")
+	}
+
+	// Display Raw HTTP Response
+	if result.RawHTTPResponse != nil {
+		fmt.Println("\n[Raw HTTP Response]:")
+		fmt.Printf("Status: %d %s\n", result.RawHTTPResponse.StatusCode, http.StatusText(result.RawHTTPResponse.StatusCode))
+		fmt.Println("Headers:")
+		for key, values := range result.RawHTTPResponse.Header {
+			fmt.Printf("  %s: %s\n", key, values)
+		}
+
+		// Read and print response body if available
+		body, err := io.ReadAll(result.RawHTTPResponse.Body)
+		if err == nil && len(body) > 0 {
+			fmt.Println("\n[Raw Response Body]:")
+			var prettyJSON map[string]interface{}
+			if err := json.Unmarshal(body, &prettyJSON); err == nil {
+				formatted, _ := json.MarshalIndent(prettyJSON, "", "  ")
+				fmt.Println(string(formatted))
+			} else {
+				fmt.Println(string(body))
+			}
+		} else {
+			fmt.Println("[INFO] No response body available")
+		}
+	} else {
+		fmt.Println("[WARNING] RawHTTPResponse is nil")
+	}
 }
 
 func (m *Medplum) url(resourceName string) string {
