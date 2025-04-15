@@ -1,0 +1,336 @@
+{
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:6d29434f-5079-4520-bfde-5a22ab574e39",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "URGENT: Schedule appointment with an endocrinologist within 1 week to evaluate thyroid function. Your TSH is severely elevated at 94 mIU/L (optimal: 0.5-1.5) and Free T4 is abnormally high at \u003e36 ng/dL, suggesting possible thyroid dysfunction that requires immediate medical attention."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:df94b122-1d95-4367-b203-5a13be4bda63",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "URGENT: Begin Vitamin B12 supplementation immediately: 1000mcg methylcobalamin daily. Your B12 level is critically low at 2 pg/mL (optimal range: 532-1245 pg/mL), which requires immediate intervention to prevent neurological damage."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d95c1aca-b423-4ad5-9d3a-60ae859a4aad",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Schedule comprehensive liver function assessment with a hepatologist. Multiple liver markers are elevated including AST (50 U/L), ALT (52 U/L), and Total Bilirubin (40 mg/dL), suggesting significant liver inflammation or dysfunction."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e307e674-162b-499b-8323-ad96bb248db7",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Begin iron supplementation: 60mg elemental iron daily with vitamin C to enhance absorption. Your iron levels are low at \u003c12 ug/dL (optimal: 60-160 ug/dL) and TIBC is low at 62 ug/dL (optimal: 250-450 ug/dL)."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:131a2330-93e3-4304-98b5-889ec9ed9b5c",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Schedule consultation with a hematologist to evaluate severely low platelet count (\u003c60 x10³/uL) and abnormal white blood cell parameters, including elevated neutrophils, lymphocytes, monocytes, eosinophils, and basophils."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:bf2a6045-b8d1-4b60-888d-650eaf1573d2",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Begin testosterone replacement therapy under medical supervision. Your total testosterone is severely low at 31 ng/dL (optimal: 700-1000 ng/dL), which may contribute to your sleep disturbances and weight concerns noted in your questionnaire."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e00faeb4-8906-4349-845a-8b3f952a06a2",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Implement anti-inflammatory diet protocol focusing on omega-3 rich foods, antioxidants, and elimination of processed foods. Your C-Reactive Protein is elevated at 21 mg/L (optimal: \u003c0.8 mg/L), indicating significant systemic inflammation."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:34036627-da1d-4b79-b69e-ef729787f9a5",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Begin homocysteine-lowering protocol: Supplement with methylfolate (1000mcg), B6 (50mg), and continue B12 supplementation. Your homocysteine is elevated at 23 umol/L (optimal: 4-8 umol/L)."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:76482b9d-0517-4615-9594-56f001e0e8ca",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Schedule kidney function assessment with a nephrologist. Your creatinine is elevated at 2 mg/dL (optimal: 0.8-1.3 mg/dL), which may indicate kidney dysfunction despite normal eGFR."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:644be78c-71ad-404f-a168-e60e241fa204",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Begin blood glucose management protocol with focus on low glycemic index foods and regular physical activity appropriate for your current fitness level. Your HbA1c is elevated at \u003e12% (optimal: 4.8-5.2%)."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:76dba6e2-ed93-4dfd-b6e2-84b4d8d34a29",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Schedule consultation with a registered dietitian to develop a personalized nutrition plan that addresses your vegan dietary preferences while ensuring adequate protein intake. Your albumin is low at \u003c4 g/dL (optimal: 4.1-5.2 g/dL)."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b82594a2-b3c7-4328-bc77-4c6be5c4e3b0",
+      "request": {
+        "method": "POST",
+        "url": "Goal"
+      },
+      "resource": {
+        "description": {
+          "text": "Begin gentle yoga or Pilates 2-3 times weekly, aligning with your exercise preferences, to improve sleep quality and address the poor sleep quality reported in your questionnaire."
+        },
+        "lifecycleStatus": "active",
+        "resourceType": "Goal",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "CarePlan"
+      },
+      "resource": {
+        "activity": [
+          {
+            "detail": {
+              "description": "URGENT: Schedule appointment with an endocrinologist within 1 week to evaluate thyroid function. Your TSH is severely elevated at 94 mIU/L (optimal: 0.5-1.5) and Free T4 is abnormally high at \u003e36 ng/dL, suggesting possible thyroid dysfunction that requires immediate medical attention.",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "URGENT: Begin Vitamin B12 supplementation immediately: 1000mcg methylcobalamin daily. Your B12 level is critically low at 2 pg/mL (optimal range: 532-1245 pg/mL), which requires immediate intervention to prevent neurological damage.",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Schedule comprehensive liver function assessment with a hepatologist. Multiple liver markers are elevated including AST (50 U/L), ALT (52 U/L), and Total Bilirubin (40 mg/dL), suggesting significant liver inflammation or dysfunction.",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Begin iron supplementation: 60mg elemental iron daily with vitamin C to enhance absorption. Your iron levels are low at \u003c12 ug/dL (optimal: 60-160 ug/dL) and TIBC is low at 62 ug/dL (optimal: 250-450 ug/dL).",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Schedule consultation with a hematologist to evaluate severely low platelet count (\u003c60 x10³/uL) and abnormal white blood cell parameters, including elevated neutrophils, lymphocytes, monocytes, eosinophils, and basophils.",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Begin testosterone replacement therapy under medical supervision. Your total testosterone is severely low at 31 ng/dL (optimal: 700-1000 ng/dL), which may contribute to your sleep disturbances and weight concerns noted in your questionnaire.",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Implement anti-inflammatory diet protocol focusing on omega-3 rich foods, antioxidants, and elimination of processed foods. Your C-Reactive Protein is elevated at 21 mg/L (optimal: \u003c0.8 mg/L), indicating significant systemic inflammation.",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Begin homocysteine-lowering protocol: Supplement with methylfolate (1000mcg), B6 (50mg), and continue B12 supplementation. Your homocysteine is elevated at 23 umol/L (optimal: 4-8 umol/L).",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Schedule kidney function assessment with a nephrologist. Your creatinine is elevated at 2 mg/dL (optimal: 0.8-1.3 mg/dL), which may indicate kidney dysfunction despite normal eGFR.",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Begin blood glucose management protocol with focus on low glycemic index foods and regular physical activity appropriate for your current fitness level. Your HbA1c is elevated at \u003e12% (optimal: 4.8-5.2%).",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Schedule consultation with a registered dietitian to develop a personalized nutrition plan that addresses your vegan dietary preferences while ensuring adequate protein intake. Your albumin is low at \u003c4 g/dL (optimal: 4.1-5.2 g/dL).",
+              "status": "not-started"
+            }
+          },
+          {
+            "detail": {
+              "description": "Begin gentle yoga or Pilates 2-3 times weekly, aligning with your exercise preferences, to improve sleep quality and address the poor sleep quality reported in your questionnaire.",
+              "status": "not-started"
+            }
+          }
+        ],
+        "goal": [
+          {
+            "reference": "urn:uuid:6d29434f-5079-4520-bfde-5a22ab574e39"
+          },
+          {
+            "reference": "urn:uuid:df94b122-1d95-4367-b203-5a13be4bda63"
+          },
+          {
+            "reference": "urn:uuid:d95c1aca-b423-4ad5-9d3a-60ae859a4aad"
+          },
+          {
+            "reference": "urn:uuid:e307e674-162b-499b-8323-ad96bb248db7"
+          },
+          {
+            "reference": "urn:uuid:131a2330-93e3-4304-98b5-889ec9ed9b5c"
+          },
+          {
+            "reference": "urn:uuid:bf2a6045-b8d1-4b60-888d-650eaf1573d2"
+          },
+          {
+            "reference": "urn:uuid:e00faeb4-8906-4349-845a-8b3f952a06a2"
+          },
+          {
+            "reference": "urn:uuid:34036627-da1d-4b79-b69e-ef729787f9a5"
+          },
+          {
+            "reference": "urn:uuid:76482b9d-0517-4615-9594-56f001e0e8ca"
+          },
+          {
+            "reference": "urn:uuid:644be78c-71ad-404f-a168-e60e241fa204"
+          },
+          {
+            "reference": "urn:uuid:76dba6e2-ed93-4dfd-b6e2-84b4d8d34a29"
+          },
+          {
+            "reference": "urn:uuid:b82594a2-b3c7-4328-bc77-4c6be5c4e3b0"
+          }
+        ],
+        "intent": "plan",
+        "resourceType": "CarePlan",
+        "status": "draft",
+        "subject": {
+          "reference": "Patient/b6729917-c4cd-4a3e-bb9f-31c18ff7f5e5"
+        }
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction"
+}
