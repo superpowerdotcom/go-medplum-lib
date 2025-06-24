@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
-	"github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
-	cr "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
+	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
+	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
+	cr "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 
 	"github.com/superpowerdotcom/go-medplum-lib"
 )

@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	c_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
-	dt_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
-	bcr_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
-	cp_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/care_plan_go_proto"
-	g_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/goal_go_proto"
-	p_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/patient_go_proto"
-	vs_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/valuesets_go_proto"
 	"github.com/pkg/errors"
+	c_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
+	dt_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
+	bcr_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
+	cp_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/care_plan_go_proto"
+	g_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/goal_go_proto"
+	p_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/patient_go_proto"
+	vs_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/valuesets_go_proto"
 
 	"github.com/superpowerdotcom/go-medplum-lib"
 )

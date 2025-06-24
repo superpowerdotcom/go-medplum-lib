@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/google/fhir/go/fhirversion"
-	"github.com/google/fhir/go/jsonformat"
-	bcr_gp "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
+	"github.com/superpowerdotcom/fhir/go/fhirversion"
+	"github.com/superpowerdotcom/fhir/go/jsonformat"
+	bcr_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 )
 
 func main() {
