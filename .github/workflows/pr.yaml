@@ -14,5 +14,10 @@ jobs:
 
     - uses: actions/checkout@main
 
+    - name: Set up Go private modules
+      run: |
+        git config --global url."https://${{ secrets.GITHUB_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+        echo "GOPRIVATE=github.com/superpowerdotcom/fhir" >> $GITHUB_ENV
+
     - name: Test
       run: go test ./... -v
