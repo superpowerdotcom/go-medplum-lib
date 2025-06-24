@@ -195,6 +195,8 @@ func DenormalizeReference(pb proto.Message) error {
 		denormalizeR3Reference(ref)
 	case *d4pb.Reference:
 		denormalizeR4Reference(ref)
+	case *d5pb.Reference:
+		denormalizeR5Reference(ref)
 	default:
 		return fmt.Errorf("invalid reference type %T", pb)
 	}
@@ -209,8 +211,10 @@ func NewDenormalizedReference(pb proto.Message) (proto.Message, error) {
 		newRef = copyR3Reference(ref)
 	case *d4pb.Reference:
 		newRef = copyR4Reference(ref)
+	case *d5pb.Reference:
+		newRef = copyR5Reference(ref)
 	default:
-		return nil, fmt.Errorf("invalid	reference type %T", pb)
+		return nil, fmt.Errorf("invalid reference type %T", pb)
 	}
 	if err := DenormalizeReference(newRef); err != nil {
 		return nil, err
@@ -268,6 +272,17 @@ func copyR4Reference(ref *d4pb.Reference) proto.Message {
 	}
 }
 
+func copyR5Reference(ref *d5pb.Reference) proto.Message {
+	return &d5pb.Reference{
+		Id:         ref.GetId(),
+		Extension:  ref.GetExtension(),
+		Type:       ref.GetType(),
+		Identifier: ref.GetIdentifier(),
+		Display:    ref.GetDisplay(),
+		Reference:  ref.GetReference(),
+	}
+}
+
 func denormalizeR4Reference(ref *d4pb.Reference) {
 	if uri := ref.GetUri(); uri != nil {
 		return
@@ -295,4 +310,14 @@ func denormalizeR4Reference(ref *d4pb.Reference) {
 	}
 	ref.Reference = &d4pb.Reference_Uri{Uri: &d4pb.String{Value: strings.Join(parts, "/")}}
 	return
+}
+
+// <SUPERPOWER.COM ADDITION>
+// A.S. 2025-06-24
+//
+// Idk why google didn't define this function, it was breaking builds
+// This function is required to prevent build errors but is not fully implemented
+// since we primarily use FHIR R4 in our codebase
+func denormalizeR5Reference(ref *d5pb.Reference) {
+	fmt.Println("Not implemented for R5. Attempted ref: ", ref)
 }

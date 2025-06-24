@@ -6,7 +6,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/newrelic/go-agent/v3 v3.34.0
 	github.com/pkg/errors v0.9.1
-	github.com/superpowerdotcom/fhir/go v0.0.5
+	github.com/superpowerdotcom/fhir/go v0.0.6
 	golang.org/x/oauth2 v0.22.0
 )
 
