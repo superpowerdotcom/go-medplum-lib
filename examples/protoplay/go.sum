@@ -28,6 +28,8 @@ github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/superpowerdotcom/fhir/go v0.0.4 h1:Kp+sfe+nyWkj5TE7n0zvkYEUJC3LKM+zDqGoA49P/7I=
 github.com/superpowerdotcom/fhir/go v0.0.4/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
+github.com/superpowerdotcom/fhir/go v0.0.5 h1:NlYsC+/rEcMRL1IdcTABKPRe32koDMDfKJvmpwv0tjY=
+github.com/superpowerdotcom/fhir/go v0.0.5/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
 github.com/superpowerdotcom/fhir/go/protopath v0.0.0 h1:qvVjSuev+8CjBDJ4lD4fnGuqcs/QgkyJAn31c2gjSIQ=
 github.com/superpowerdotcom/fhir/go/protopath v0.0.0/go.mod h1:JbH7snW8Ohj/E407wXVVVgdBka9uNwu8sjF9BvSYBMM=
 golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc h1:mCRnTeVUjcrhlRmO0VK8a6k6Rrf6TF9htwo2pJVSjIU=

@@ -2,7 +2,7 @@ module github.com/superpowerdotcom/protoplay
 
 go 1.23.0
 
-require github.com/superpowerdotcom/fhir/go v0.0.4
+require github.com/superpowerdotcom/fhir/go v0.0.5
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.9 // indirect
