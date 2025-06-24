@@ -1,0 +1,15 @@
+{
+  "entry": [
+    {
+      "resource": {
+        "email": "alice.smith@example.com",
+        "emailVerified": true,
+        "firstName": "Alice",
+        "lastName": "Smith",
+        "resourceType": "User"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "collection"
+}

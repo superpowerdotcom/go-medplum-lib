@@ -195,8 +195,6 @@ func DenormalizeReference(pb proto.Message) error {
 		denormalizeR3Reference(ref)
 	case *d4pb.Reference:
 		denormalizeR4Reference(ref)
-	case *d5pb.Reference:
-		denormalizeR5Reference(ref)
 	default:
 		return fmt.Errorf("invalid reference type %T", pb)
 	}
@@ -211,10 +209,8 @@ func NewDenormalizedReference(pb proto.Message) (proto.Message, error) {
 		newRef = copyR3Reference(ref)
 	case *d4pb.Reference:
 		newRef = copyR4Reference(ref)
-	case *d5pb.Reference:
-		newRef = copyR5Reference(ref)
 	default:
-		return nil, fmt.Errorf("invalid reference type %T", pb)
+		return nil, fmt.Errorf("invalid	reference type %T", pb)
 	}
 	if err := DenormalizeReference(newRef); err != nil {
 		return nil, err
@@ -263,17 +259,6 @@ func denormalizeR3Reference(ref *d3pb.Reference) {
 
 func copyR4Reference(ref *d4pb.Reference) proto.Message {
 	return &d4pb.Reference{
-		Id:         ref.GetId(),
-		Extension:  ref.GetExtension(),
-		Type:       ref.GetType(),
-		Identifier: ref.GetIdentifier(),
-		Display:    ref.GetDisplay(),
-		Reference:  ref.GetReference(),
-	}
-}
-
-func copyR5Reference(ref *d5pb.Reference) proto.Message {
-	return &d5pb.Reference{
 		Id:         ref.GetId(),
 		Extension:  ref.GetExtension(),
 		Type:       ref.GetType(),
