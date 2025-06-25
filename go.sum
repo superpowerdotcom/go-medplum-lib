@@ -36,6 +36,8 @@ github.com/superpowerdotcom/fhir/go v0.0.5 h1:NlYsC+/rEcMRL1IdcTABKPRe32koDMDfKJ
 github.com/superpowerdotcom/fhir/go v0.0.5/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
 github.com/superpowerdotcom/fhir/go v0.0.6 h1:sq5ybunodMmlU1YJhx+zXPuTv70duADY6F0OxnfP5jM=
 github.com/superpowerdotcom/fhir/go v0.0.6/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
+github.com/superpowerdotcom/fhir/go v0.0.7 h1:dyhhgWAzqHgfQ2dzptHaL0reeZn47ZPgzxCtPKsCI8w=
+github.com/superpowerdotcom/fhir/go v0.0.7/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
 github.com/superpowerdotcom/fhir/go/protopath v0.0.0 h1:qvVjSuev+8CjBDJ4lD4fnGuqcs/QgkyJAn31c2gjSIQ=
 github.com/superpowerdotcom/fhir/go/protopath v0.0.0/go.mod h1:JbH7snW8Ohj/E407wXVVVgdBka9uNwu8sjF9BvSYBMM=
 golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc h1:mCRnTeVUjcrhlRmO0VK8a6k6Rrf6TF9htwo2pJVSjIU=
