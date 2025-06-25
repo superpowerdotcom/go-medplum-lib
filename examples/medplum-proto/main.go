@@ -142,16 +142,10 @@ func runExample(exampleName string) bool {
 
 	fmt.Printf("  ✅ %s completed successfully\n", exampleName)
 
-	// Show first few lines of output for verification
+	// Show full output for verification
 	outputLines := strings.Split(string(output), "\n")
-	fmt.Printf("  📄 Output preview:\n")
-	for i, line := range outputLines {
-		if i >= 3 { // Show only first 3 lines
-			if len(outputLines) > 3 {
-				fmt.Printf("    ... (%d more lines)\n", len(outputLines)-3)
-			}
-			break
-		}
+	fmt.Printf("  📄 Full Output:\n")
+	for _, line := range outputLines {
 		if line != "" {
 			fmt.Printf("    %s\n", line)
 		}

@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/superpowerdotcom/fhir/go/fhirversion"
+	"github.com/superpowerdotcom/fhir/go/jsonformat"
 	c_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
 	dt "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	bcr_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
@@ -21,8 +24,8 @@ import (
 func main() {
 	m, err := medplum.New(&medplum.Options{
 		MedplumURL:   "http://localhost:8103",
-		ClientID:     "3008218e-5de9-4398-a987-ca393e3e64b0",
-		ClientSecret: "1b6b7708423fa6cc589d2996e40d35bc2ba38d6af366e16660bcfcecb5438896",
+		ClientID:     "a787c2f4-0ca0-4abe-b9fa-2a36d628b67d",
+		ClientSecret: "61ac1d01d0a414e0f4d051ff30227765984367edcc316e70bc2f7d6e9f3260af",
 	})
 
 	if err != nil {
@@ -54,7 +57,7 @@ func main() {
 		EmailVerified: &dt.Boolean{Value: true},
 	}
 
-	// Construct Bundle with transaction type
+	// Create a Bundle with multiple User resources
 	bundle := &bcr_gp.Bundle{
 		Type: &bcr_gp.Bundle_TypeCode{
 			Value: c_gp.BundleTypeCode_TRANSACTION,
@@ -102,12 +105,62 @@ func main() {
 		},
 	}
 
-	// Send bundle in contained resource
-	result, err := m.ExecuteBatch(nil, &bcr_gp.ContainedResource{
+	// Create the contained resource bundle for marshalling
+	containedBundle := &bcr_gp.ContainedResource{
 		OneofResource: &bcr_gp.ContainedResource_Bundle{
 			Bundle: bundle,
 		},
-	})
+	}
+
+	// Test marshalling and unmarshalling the transaction Bundle
+	fmt.Println("Testing transaction Bundle marshalling/unmarshalling...")
+
+	marshaller, err := jsonformat.NewMarshaller(false, "", "  ", fhirversion.R4)
+	if err != nil {
+		log.Fatal("Failed to create marshaller:", err)
+	}
+
+	data, err := marshaller.Marshal(containedBundle)
+	if err != nil {
+		log.Fatal("Unable to marshal transaction bundle:", err)
+	}
+
+	fmt.Println("Marshalled transaction Bundle JSON:")
+	fmt.Println(string(data))
+
+	// For unmarshalling, the JSON should represent a Bundle, not a ContainedResource
+	unmarshaller, err := jsonformat.NewUnmarshaller("UTC", fhirversion.R4)
+	if err != nil {
+		log.Fatal("Failed to create unmarshaller:", err)
+	}
+
+	unmarshalledResource, err := unmarshaller.UnmarshalR4(data)
+	if err != nil {
+		log.Fatal("Unable to unmarshal JSON:", err)
+	}
+
+	fmt.Println("Successfully marshalled and unmarshalled transaction Bundle!")
+
+	// Access the User fields from the unmarshalled bundle
+	unmarshalledBundle := unmarshalledResource.GetBundle()
+	if unmarshalledBundle != nil && len(unmarshalledBundle.Entry) > 0 {
+		fmt.Printf("Unmarshalled Bundle contains %d entries\n", len(unmarshalledBundle.Entry))
+		for i, entry := range unmarshalledBundle.Entry {
+			userResource := entry.GetResource().GetUser()
+			if userResource != nil {
+				fmt.Printf("Unmarshalled User %d: Name=%s %s, Email=%s, Verified=%v\n",
+					i+1,
+					userResource.FirstName.Value,
+					userResource.LastName.Value,
+					userResource.Email.Value,
+					userResource.EmailVerified.Value,
+				)
+			}
+		}
+	}
+
+	// Send bundle in contained resource
+	result, err := m.ExecuteBatch(nil, containedBundle)
 	if err != nil {
 		fmt.Println("Unable to execute batch: " + err.Error())
 		os.Exit(1)

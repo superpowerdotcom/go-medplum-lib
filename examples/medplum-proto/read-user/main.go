@@ -3,8 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/superpowerdotcom/fhir/go/fhirversion"
+	"github.com/superpowerdotcom/fhir/go/jsonformat"
 	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
 	dt "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	cr "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
@@ -89,11 +92,57 @@ func createUser(m *medplum.Medplum) (string, error) {
 		},
 	}
 
-	result, err := m.ExecuteBatch(nil, &cr.ContainedResource{
+	// Create the contained resource bundle for marshalling
+	containedBundle := &cr.ContainedResource{
 		OneofResource: &cr.ContainedResource_Bundle{
 			Bundle: bundle,
 		},
-	})
+	}
+
+	// Test marshalling and unmarshalling the Bundle
+	fmt.Println("Testing Bundle marshalling/unmarshalling...")
+
+	marshaller, err := jsonformat.NewMarshaller(false, "", "  ", fhirversion.R4)
+	if err != nil {
+		log.Fatal("Failed to create marshaller:", err)
+	}
+
+	data, err := marshaller.Marshal(containedBundle)
+	if err != nil {
+		log.Fatal("Unable to marshal bundle:", err)
+	}
+
+	fmt.Println("Marshalled JSON:")
+	fmt.Println(string(data))
+
+	// For unmarshalling, the JSON should represent a Bundle, not a ContainedResource
+	unmarshaller, err := jsonformat.NewUnmarshaller("UTC", fhirversion.R4)
+	if err != nil {
+		log.Fatal("Failed to create unmarshaller:", err)
+	}
+
+	unmarshalledResource, err := unmarshaller.UnmarshalR4(data)
+	if err != nil {
+		log.Fatal("Unable to unmarshal JSON:", err)
+	}
+
+	fmt.Println("Successfully marshalled and unmarshalled!")
+
+	// Access the User fields from the unmarshalled bundle
+	unmarshalledBundle := unmarshalledResource.GetBundle()
+	if unmarshalledBundle != nil && len(unmarshalledBundle.Entry) > 0 {
+		userResource := unmarshalledBundle.Entry[0].GetResource().GetUser()
+		if userResource != nil {
+			fmt.Printf("Unmarshalled User: Name=%s %s, Email=%s, Verified=%v\n",
+				userResource.FirstName.Value,
+				userResource.LastName.Value,
+				userResource.Email.Value,
+				userResource.EmailVerified.Value,
+			)
+		}
+	}
+
+	result, err := m.ExecuteBatch(nil, containedBundle)
 	if err != nil {
 		return "", err
 	}

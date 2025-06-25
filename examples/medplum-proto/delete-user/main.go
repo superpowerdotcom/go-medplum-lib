@@ -3,9 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
+	"github.com/superpowerdotcom/fhir/go/fhirversion"
+	"github.com/superpowerdotcom/fhir/go/jsonformat"
 	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
 	dt "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	cr "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
@@ -75,11 +78,55 @@ func main() {
 		},
 	}
 
-	deleteResult, err := m.ExecuteBatch(nil, &cr.ContainedResource{
+	// Create the contained resource bundle for marshalling
+	deleteContainedBundle := &cr.ContainedResource{
 		OneofResource: &cr.ContainedResource_Bundle{
 			Bundle: deleteBundle,
 		},
-	})
+	}
+
+	// Test marshalling and unmarshalling the delete Bundle
+	fmt.Println("Testing delete Bundle marshalling/unmarshalling...")
+
+	marshaller, err := jsonformat.NewMarshaller(false, "", "  ", fhirversion.R4)
+	if err != nil {
+		log.Fatal("Failed to create marshaller:", err)
+	}
+
+	data, err := marshaller.Marshal(deleteContainedBundle)
+	if err != nil {
+		log.Fatal("Unable to marshal delete bundle:", err)
+	}
+
+	fmt.Println("Marshalled delete Bundle JSON:")
+	fmt.Println(string(data))
+
+	// For unmarshalling, the JSON should represent a Bundle, not a ContainedResource
+	unmarshaller, err := jsonformat.NewUnmarshaller("UTC", fhirversion.R4)
+	if err != nil {
+		log.Fatal("Failed to create unmarshaller:", err)
+	}
+
+	unmarshalledResource, err := unmarshaller.UnmarshalR4(data)
+	if err != nil {
+		log.Fatal("Unable to unmarshal JSON:", err)
+	}
+
+	fmt.Println("Successfully marshalled and unmarshalled delete Bundle!")
+
+	// Access the delete request from the unmarshalled bundle
+	unmarshalledBundle := unmarshalledResource.GetBundle()
+	if unmarshalledBundle != nil && len(unmarshalledBundle.Entry) > 0 {
+		deleteRequest := unmarshalledBundle.Entry[0].GetRequest()
+		if deleteRequest != nil {
+			fmt.Printf("Unmarshalled delete request: Method=%s, URL=%s\n",
+				deleteRequest.Method.Value,
+				deleteRequest.Url.Value,
+			)
+		}
+	}
+
+	deleteResult, err := m.ExecuteBatch(nil, deleteContainedBundle)
 	if err != nil {
 		fmt.Println("Unable to execute delete transaction: " + err.Error())
 		os.Exit(1)

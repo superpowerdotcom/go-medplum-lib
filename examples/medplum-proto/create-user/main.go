@@ -70,19 +70,12 @@ func main() {
 	// Test marshalling and unmarshalling the Bundle
 	fmt.Println("Testing Bundle marshalling/unmarshalling...")
 
-	// For marshalling, we need to wrap the Bundle in a ContainedResource
-	bundleForMarshalling := &bcr_gp.ContainedResource{
-		OneofResource: &bcr_gp.ContainedResource_Bundle{
-			Bundle: bundle,
-		},
-	}
-
 	marshaller, err := jsonformat.NewMarshaller(false, "", "  ", fhirversion.R4)
 	if err != nil {
 		log.Fatal("Failed to create marshaller:", err)
 	}
 
-	data, err := marshaller.Marshal(bundleForMarshalling)
+	data, err := marshaller.Marshal(containedBundle)
 	if err != nil {
 		log.Fatal("Unable to marshal bundle:", err)
 	}
