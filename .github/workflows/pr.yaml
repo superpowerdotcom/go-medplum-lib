@@ -14,10 +14,11 @@ jobs:
 
     - uses: actions/checkout@main
 
-    - name: Set up Go private modules
+    - name: Configure Git for private repository access
+      env:
+        PAT_TOKEN: ${{ secrets.CI_PAT_TOKEN_READONLY }}
       run: |
-        git config --global url."https://${{ secrets.GITHUB_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-        echo "GOPRIVATE=github.com/superpowerdotcom/fhir" >> $GITHUB_ENV
+        git config --global url."https://${PAT_TOKEN}@github.com/".insteadOf "https://github.com/"
 
     - name: Test
       run: go test ./... -v
