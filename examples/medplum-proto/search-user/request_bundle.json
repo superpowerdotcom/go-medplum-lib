@@ -1,0 +1,19 @@
+{
+  "entry": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "User"
+      },
+      "resource": {
+        "email": "search.testuser@example.com",
+        "emailVerified": true,
+        "firstName": "Search",
+        "lastName": "TestUser",
+        "resourceType": "User"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction"
+}

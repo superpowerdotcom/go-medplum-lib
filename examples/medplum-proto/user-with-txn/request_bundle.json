@@ -1,0 +1,45 @@
+{
+  "entry": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "User"
+      },
+      "resource": {
+        "email": "txn.user1@test.com",
+        "emailVerified": true,
+        "firstName": "Transaction",
+        "lastName": "User1",
+        "resourceType": "User"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "User"
+      },
+      "resource": {
+        "email": "txn.user2@test.com",
+        "emailVerified": false,
+        "firstName": "Transaction",
+        "lastName": "User2",
+        "resourceType": "User"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "User"
+      },
+      "resource": {
+        "email": "txn.user3@test.com",
+        "emailVerified": true,
+        "firstName": "Transaction",
+        "lastName": "User3",
+        "resourceType": "User"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction"
+}

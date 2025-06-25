@@ -1,0 +1,37 @@
+{
+  "entry": [
+    {
+      "resource": {
+        "email": "search.testuser@example.com",
+        "emailVerified": true,
+        "firstName": "Search",
+        "id": "a10a56c4-3ce6-4b6e-994f-656a257f36e1",
+        "lastName": "TestUser",
+        "meta": {
+          "lastUpdated": "2025-06-25T01:51:19.293Z",
+          "versionId": "cd84c7e1-e814-403f-a92b-0d1ccf18f58a"
+        },
+        "resourceType": "User"
+      },
+      "response": {
+        "location": "User/a10a56c4-3ce6-4b6e-994f-656a257f36e1",
+        "outcome": {
+          "id": "created",
+          "issue": [
+            {
+              "code": "informational",
+              "details": {
+                "text": "Created"
+              },
+              "severity": "information"
+            }
+          ],
+          "resourceType": "OperationOutcome"
+        },
+        "status": "201"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction-response"
+}

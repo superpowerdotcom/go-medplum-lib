@@ -1,0 +1,24 @@
+{
+  "entry": [
+    {
+      "response": {
+        "outcome": {
+          "id": "ok",
+          "issue": [
+            {
+              "code": "informational",
+              "details": {
+                "text": "All OK"
+              },
+              "severity": "information"
+            }
+          ],
+          "resourceType": "OperationOutcome"
+        },
+        "status": "200"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction-response"
+}

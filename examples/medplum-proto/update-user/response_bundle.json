@@ -1,0 +1,37 @@
+{
+  "entry": [
+    {
+      "resource": {
+        "email": "update.testuser@example.com",
+        "emailVerified": false,
+        "firstName": "Update",
+        "id": "9c97c534-28ec-45a0-85f1-c4e70d447da7",
+        "lastName": "UpdatedLastName",
+        "meta": {
+          "lastUpdated": "2025-06-25T01:51:20.613Z",
+          "versionId": "169a5ca0-f4ae-49ea-81f3-c82602b37dc8"
+        },
+        "resourceType": "User"
+      },
+      "response": {
+        "location": "User/9c97c534-28ec-45a0-85f1-c4e70d447da7",
+        "outcome": {
+          "id": "ok",
+          "issue": [
+            {
+              "code": "informational",
+              "details": {
+                "text": "All OK"
+              },
+              "severity": "information"
+            }
+          ],
+          "resourceType": "OperationOutcome"
+        },
+        "status": "200"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction-response"
+}

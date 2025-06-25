@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -20,6 +21,83 @@ import (
 //
 // Read more about Medplum transactions here:
 // https://www.medplum.com/docs/migration/migration-pipelines#using-transactions-for-data-integrity
+
+// testBundleMarshalling tests marshalling and unmarshalling of a bundle
+func testBundleMarshalling(bundle *bcr_gp.ContainedResource, isRequest bool) *bcr_gp.ContainedResource {
+	bundleType := "response"
+	if isRequest {
+		bundleType = "request"
+	}
+
+	fmt.Printf("Testing %s bundle marshalling/unmarshalling...\n", bundleType)
+
+	marshaller, err := jsonformat.NewMarshaller(false, "  ", "  ", fhirversion.R4)
+	if err != nil {
+		log.Fatalf("Failed to create marshaller: %v", err)
+	}
+
+	data, err := marshaller.Marshal(bundle)
+	if err != nil {
+		log.Fatalf("Unable to marshal %s bundle: %v", bundleType, err)
+	}
+
+	// Pretty-print the JSON using standard library
+	var jsonObj interface{}
+	err = json.Unmarshal(data, &jsonObj)
+	if err != nil {
+		log.Fatalf("Unable to parse JSON for pretty-printing: %v", err)
+	}
+
+	prettyData, err := json.MarshalIndent(jsonObj, "", "  ")
+	if err != nil {
+		log.Fatalf("Unable to pretty-print JSON: %v", err)
+	}
+
+	fmt.Printf("Marshalled %s bundle JSON:\n", bundleType)
+	fmt.Println(string(prettyData))
+
+	// Write pretty-printed JSON to file
+	filename := fmt.Sprintf("./%s_bundle.json", bundleType)
+	err = os.WriteFile(filename, prettyData, 0644)
+	if err != nil {
+		log.Printf("Warning: Failed to write JSON to file %s: %v", filename, err)
+	} else {
+		fmt.Printf("💾 Saved %s bundle JSON to: %s\n", bundleType, filename)
+	}
+
+	unmarshaller, err := jsonformat.NewUnmarshaller("UTC", fhirversion.R4)
+	if err != nil {
+		log.Fatalf("Failed to create unmarshaller: %v", err)
+	}
+
+	unmarshalledResource, err := unmarshaller.UnmarshalR4(data)
+	if err != nil {
+		log.Fatalf("Unable to unmarshal %s bundle JSON: %v", bundleType, err)
+	}
+
+	fmt.Printf("Successfully marshalled and unmarshalled %s bundle!\n", bundleType)
+
+	// Access the Bundle and display user information
+	unmarshalledBundle := unmarshalledResource.GetBundle()
+	if unmarshalledBundle != nil && len(unmarshalledBundle.Entry) > 0 {
+		fmt.Printf("Unmarshalled Bundle contains %d entries\n", len(unmarshalledBundle.Entry))
+		for i, entry := range unmarshalledBundle.Entry {
+			userResource := entry.GetResource().GetUser()
+			if userResource != nil {
+				fmt.Printf("Unmarshalled User %d: Name=%s %s, Email=%s, Verified=%v\n",
+					i+1,
+					userResource.FirstName.Value,
+					userResource.LastName.Value,
+					userResource.Email.Value,
+					userResource.EmailVerified.Value,
+				)
+			}
+		}
+	}
+	fmt.Println()
+
+	return unmarshalledResource
+}
 
 func main() {
 	m, err := medplum.New(&medplum.Options{
@@ -113,51 +191,7 @@ func main() {
 	}
 
 	// Test marshalling and unmarshalling the transaction Bundle
-	fmt.Println("Testing transaction Bundle marshalling/unmarshalling...")
-
-	marshaller, err := jsonformat.NewMarshaller(false, "", "  ", fhirversion.R4)
-	if err != nil {
-		log.Fatal("Failed to create marshaller:", err)
-	}
-
-	data, err := marshaller.Marshal(containedBundle)
-	if err != nil {
-		log.Fatal("Unable to marshal transaction bundle:", err)
-	}
-
-	fmt.Println("Marshalled transaction Bundle JSON:")
-	fmt.Println(string(data))
-
-	// For unmarshalling, the JSON should represent a Bundle, not a ContainedResource
-	unmarshaller, err := jsonformat.NewUnmarshaller("UTC", fhirversion.R4)
-	if err != nil {
-		log.Fatal("Failed to create unmarshaller:", err)
-	}
-
-	unmarshalledResource, err := unmarshaller.UnmarshalR4(data)
-	if err != nil {
-		log.Fatal("Unable to unmarshal JSON:", err)
-	}
-
-	fmt.Println("Successfully marshalled and unmarshalled transaction Bundle!")
-
-	// Access the User fields from the unmarshalled bundle
-	unmarshalledBundle := unmarshalledResource.GetBundle()
-	if unmarshalledBundle != nil && len(unmarshalledBundle.Entry) > 0 {
-		fmt.Printf("Unmarshalled Bundle contains %d entries\n", len(unmarshalledBundle.Entry))
-		for i, entry := range unmarshalledBundle.Entry {
-			userResource := entry.GetResource().GetUser()
-			if userResource != nil {
-				fmt.Printf("Unmarshalled User %d: Name=%s %s, Email=%s, Verified=%v\n",
-					i+1,
-					userResource.FirstName.Value,
-					userResource.LastName.Value,
-					userResource.Email.Value,
-					userResource.EmailVerified.Value,
-				)
-			}
-		}
-	}
+	testBundleMarshalling(containedBundle, true)
 
 	// Send bundle in contained resource
 	result, err := m.ExecuteBatch(nil, containedBundle)
@@ -165,6 +199,9 @@ func main() {
 		fmt.Println("Unable to execute batch: " + err.Error())
 		os.Exit(1)
 	}
+
+	// Test marshalling and unmarshalling the response Bundle
+	testBundleMarshalling(result.ContainedResource, false)
 
 	// Check transaction results
 	resultBundle := result.ContainedResource.GetBundle()
