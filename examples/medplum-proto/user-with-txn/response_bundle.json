@@ -1,0 +1,99 @@
+{
+  "entry": [
+    {
+      "resource": {
+        "email": "txn.user1@test.com",
+        "emailVerified": true,
+        "firstName": "Transaction",
+        "id": "ef25db69-69d6-4a5c-b022-6f9cd5116f10",
+        "lastName": "User1",
+        "meta": {
+          "lastUpdated": "2025-06-25T01:51:21.980Z",
+          "versionId": "002fb974-8ce3-4e08-acf7-a5434cf4b94c"
+        },
+        "resourceType": "User"
+      },
+      "response": {
+        "location": "User/ef25db69-69d6-4a5c-b022-6f9cd5116f10",
+        "outcome": {
+          "id": "created",
+          "issue": [
+            {
+              "code": "informational",
+              "details": {
+                "text": "Created"
+              },
+              "severity": "information"
+            }
+          ],
+          "resourceType": "OperationOutcome"
+        },
+        "status": "201"
+      }
+    },
+    {
+      "resource": {
+        "email": "txn.user2@test.com",
+        "emailVerified": false,
+        "firstName": "Transaction",
+        "id": "773d606a-d3b2-42aa-8d3f-0059588edaa3",
+        "lastName": "User2",
+        "meta": {
+          "lastUpdated": "2025-06-25T01:51:21.983Z",
+          "versionId": "dce69a93-806b-4e33-9e56-6f67dc60f623"
+        },
+        "resourceType": "User"
+      },
+      "response": {
+        "location": "User/773d606a-d3b2-42aa-8d3f-0059588edaa3",
+        "outcome": {
+          "id": "created",
+          "issue": [
+            {
+              "code": "informational",
+              "details": {
+                "text": "Created"
+              },
+              "severity": "information"
+            }
+          ],
+          "resourceType": "OperationOutcome"
+        },
+        "status": "201"
+      }
+    },
+    {
+      "resource": {
+        "email": "txn.user3@test.com",
+        "emailVerified": true,
+        "firstName": "Transaction",
+        "id": "7185a72e-7271-49f2-a715-51cf2712ec42",
+        "lastName": "User3",
+        "meta": {
+          "lastUpdated": "2025-06-25T01:51:21.987Z",
+          "versionId": "4332c9a4-f127-4fee-8303-10d63a1b84c3"
+        },
+        "resourceType": "User"
+      },
+      "response": {
+        "location": "User/7185a72e-7271-49f2-a715-51cf2712ec42",
+        "outcome": {
+          "id": "created",
+          "issue": [
+            {
+              "code": "informational",
+              "details": {
+                "text": "Created"
+              },
+              "severity": "information"
+            }
+          ],
+          "resourceType": "OperationOutcome"
+        },
+        "status": "201"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction-response"
+}

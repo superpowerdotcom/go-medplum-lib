@@ -7,7 +7,7 @@
 go-medplum-lib
 ==============
 
-A Go library for interfacing with Medplum using [Google's FHIR protos](https://github.com/google/fhir).
+A Go library for interfacing with Medplum using [Google's FHIR protos](https://github.com/superpowerdotcom/fhir).
 
 ## Why?
 
@@ -55,9 +55,9 @@ import (
     "fmt"
     "os"
 
-    dt "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
-    cr "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
-    "github.com/google/fhir/go/proto/google/fhir/proto/r4/core/resources/patient_go_proto"
+    dt "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
+    cr "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
+    "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/patient_go_proto"
 
     "github.com/superpowerdotcom/go-medplum-lib"
 )

@@ -1,0 +1,37 @@
+{
+  "entry": [
+    {
+      "resource": {
+        "email": "alice.smith@example.com",
+        "emailVerified": true,
+        "firstName": "Alice",
+        "id": "1225257c-98d1-425f-ab12-96532559155f",
+        "lastName": "Smith",
+        "meta": {
+          "lastUpdated": "2025-06-25T01:51:15.030Z",
+          "versionId": "4ee31584-5e10-4da8-9bfa-b60d444cc826"
+        },
+        "resourceType": "User"
+      },
+      "response": {
+        "location": "User/1225257c-98d1-425f-ab12-96532559155f",
+        "outcome": {
+          "id": "created",
+          "issue": [
+            {
+              "code": "informational",
+              "details": {
+                "text": "Created"
+              },
+              "severity": "information"
+            }
+          ],
+          "resourceType": "OperationOutcome"
+        },
+        "status": "201"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction-response"
+}

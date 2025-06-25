@@ -14,5 +14,11 @@ jobs:
 
     - uses: actions/checkout@main
 
+    - name: Configure Git for private repository access
+      env:
+        PAT_TOKEN: ${{ secrets.CI_PAT_TOKEN_READONLY }}
+      run: |
+        git config --global url."https://${PAT_TOKEN}@github.com/".insteadOf "https://github.com/"
+
     - name: Test
       run: go test ./... -v

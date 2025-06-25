@@ -1,0 +1,26 @@
+{
+  "entry": [
+    {
+      "resource": {
+        "email": "audric-admin@superpower.com",
+        "firstName": "Audric",
+        "id": "635d69da-4259-4c8e-952b-95926dce7674",
+        "identifier": [
+          {
+            "system": "https://superpower.com/fhir/StructureDefinition/user-type",
+            "value": "admin"
+          },
+          {
+            "system": "https://superpower.com/fhir/StructureDefinition/user-source",
+            "value": "seed"
+          }
+        ],
+        "lastName": "Serador",
+        "passwordHash": "$2a$10$pen5UIwTm/SndqwDb8PWIeWpeNIY9id1tWpLutHw08AVi42G992..",
+        "resourceType": "User"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "collection"
+}

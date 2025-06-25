@@ -1,0 +1,12 @@
+{
+  "entry": [
+    {
+      "request": {
+        "method": "DELETE",
+        "url": "User/4f4cbcc8-c861-43ba-a195-ca56a2ef623e"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "transaction"
+}
