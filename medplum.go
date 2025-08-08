@@ -25,6 +25,7 @@ type IMedplum interface {
 	UpdateResource(ctx context.Context, id string, resource *cr.ContainedResource) (*Result, error)
 	DeleteResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
 	ReadResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
+	ReadResourceHistory(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
 	Search(ctx context.Context, code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error)
 	ExecuteBatch(ctx context.Context, resource *cr.ContainedResource) (*Result, error)
 	Post(ctx context.Context, resource *cr.ContainedResource, endpoint ...string) (*Result, error)
@@ -192,6 +193,36 @@ func (m *Medplum) ReadResource(ctx context.Context, id string, code codes_go_pro
 	}
 
 	req, err := http.NewRequest("GET", m.url(resourceName)+"/"+id, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create request: %s", err)
+	}
+
+	req.Header.Set("Content-Type", "application/fhir+json")
+
+	httpResp, err := m.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to send request: %s", err)
+	}
+
+	return m.generateResult(httpResp)
+}
+
+func (m *Medplum) ReadResourceHistory(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+	if ctx != nil {
+		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.ReadResourceHistory")
+		defer segment.End()
+	}
+
+	if id == "" {
+		return nil, errors.New("id cannot be empty")
+	}
+
+	resourceName, err := getResourceNameFromTypeCode(code)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
+	}
+
+	req, err := http.NewRequest("GET", m.url(resourceName)+"/"+id+"/_history", nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
