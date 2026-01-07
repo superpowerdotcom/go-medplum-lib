@@ -47,11 +47,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Delete patient response status code: ", result.RawHTTPResponse.StatusCode)
+	fmt.Println("Delete patient response status code: ", result.RawHTTPResponses[0].StatusCode)
 
 	// Did the delete succeed?
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		fmt.Printf("unexpected response status code: %d\n", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		fmt.Printf("unexpected response status code: %d\n", result.RawHTTPResponses[0].StatusCode)
 		os.Exit(1)
 	}
 
@@ -66,8 +66,8 @@ func main() {
 	}
 
 	// The result should have a non 2xx status code
-	if result.RawHTTPResponse.StatusCode >= 200 && result.RawHTTPResponse.StatusCode < 300 {
-		fmt.Printf("Unexpected: expected non-2xx status code fetching patient after delete, got %d\n", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode >= 200 && result.RawHTTPResponses[0].StatusCode < 300 {
+		fmt.Printf("Unexpected: expected non-2xx status code fetching patient after delete, got %d\n", result.RawHTTPResponses[0].StatusCode)
 		os.Exit(1)
 	}
 
@@ -99,8 +99,8 @@ func createPatient(m *medplum.Medplum) (string, error) {
 
 	}
 
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponses[0].StatusCode)
 	}
 
 	patientResource := result.ContainedResource.GetPatient()

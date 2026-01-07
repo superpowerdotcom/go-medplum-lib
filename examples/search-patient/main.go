@@ -43,8 +43,8 @@ func main() {
 	}
 
 	// Did the search succeed?
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		fmt.Printf("Unable to search for patient - unexpected response status code: %d\n", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		fmt.Printf("Unable to search for patient - unexpected response status code: %d\n", result.RawHTTPResponses[0].StatusCode)
 		os.Exit(1)
 	}
 
@@ -102,8 +102,8 @@ func createPatient(m *medplum.Medplum) (string, error) {
 
 	}
 
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponses[0].StatusCode)
 	}
 
 	patientResource := result.ContainedResource.GetPatient()

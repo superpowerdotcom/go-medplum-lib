@@ -57,8 +57,8 @@ func main() {
 	}
 
 	// Did the create succeed?
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		fmt.Printf("unexpected response status code: %d\n", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		fmt.Printf("unexpected response status code: %d\n", result.RawHTTPResponses[0].StatusCode)
 		os.Exit(1)
 	}
 
