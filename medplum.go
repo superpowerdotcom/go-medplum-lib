@@ -331,7 +331,16 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 	allResponses := make([]*http.Response, 0)
 	searchParam := query
 
+	maxPages := 1000
+	pageCount := 0
+
 	for {
+		pageCount++
+
+		if pageCount > maxPages {
+			return nil, fmt.Errorf("pagination limit exceeded: more than %d pages", maxPages)
+		}
+
 		fullURL := m.url(resourceName)
 
 		if searchParam != "" {
