@@ -91,8 +91,8 @@ func main() {
 	}
 
 	// Did the request succeed?
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		fmt.Printf("unexpected response status code: %d\n", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		fmt.Printf("unexpected response status code: %d\n", result.RawHTTPResponses[0].StatusCode)
 		os.Exit(1)
 	}
 
@@ -129,8 +129,8 @@ func createPatientResource(m *medplum.Medplum) (string, error) {
 		return "", errors.New("Unable to create patient resource: " + err.Error())
 	}
 
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		return "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponses[0].StatusCode)
 	}
 
 	patientResource := result.ContainedResource.GetPatient()
@@ -155,8 +155,8 @@ func createBinaryResource(m *medplum.Medplum) (string, string, error) {
 	}
 
 	// Did the create succeed?
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		return "", "", fmt.Errorf("unexpected response status code: %d", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		return "", "", fmt.Errorf("unexpected response status code: %d", result.RawHTTPResponses[0].StatusCode)
 	}
 
 	// Binary might not be able to get unmarshalled into an FHIR resource, so

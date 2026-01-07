@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/superpowerdotcom/fhir/go/fhirversion"
@@ -16,6 +17,7 @@ import (
 	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
 	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
 	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
+	bundle_go_proto "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 	cr "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 )
 
@@ -83,7 +85,7 @@ type Result struct {
 	// NOTE: It is possible for the jsonformat library to fail to unmarshal the
 	// Medplum response into a ContainedResource. To be able to handle this,
 	// make sure to check that ContainedResource is not nil. If it's nil, you
-	// can try using MapResource instead or look through the RawHTTPResponse.
+	// can try using MapResource instead or look through the RawHTTPResponses.
 	//
 	// You can see an example of what's involved in extracting a contained
 	// resource in some of the examples in `./examples` dir.
@@ -94,14 +96,14 @@ type Result struct {
 	// using MapResource instead.
 	MapResource map[string]interface{}
 
-	// All responses from Medplum will also include the "raw" HTTP response that
-	// the library receives from the Medplum API.
+	// RawHTTPResponses contains all HTTP responses from paginated requests.
+	// For non-paginated requests (like Create, Update, Delete), this will
+	// contain a single response. For Search requests, this may contain multiple
+	// responses if pagination was followed.
 	//
 	// This is useful if you need to inspect headers, status codes, read the
-	// body manually etc. It is especially useful if you do not need to extract
-	// the wrapped resource from the ContainedResource. For example, if you are
-	// deleting a resource, you might only want to check the status code.
-	RawHTTPResponse *http.Response
+	// body manually etc. For simple status checks, use RawHTTPResponses[0].
+	RawHTTPResponses []*http.Response
 }
 
 type Medplum struct {
@@ -309,6 +311,10 @@ func (m *Medplum) DeleteResource(ctx context.Context, id string, code codes_go_p
 // resource type. If query is empty, Medplum will return all resources of the
 // provided type; if query is not empty, it must be a valid FHIR search query.
 //
+// Search automatically handles pagination - it will follow all "next" links
+// and combine all entries into a single Bundle. All HTTP responses are collected
+// in RawHTTPResponses.
+//
 // Refer: https://hl7.org/fhir/search.html
 func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error) {
 	if ctx != nil {
@@ -321,25 +327,89 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
 	}
 
-	fullURL := m.url(resourceName)
+	allEntries := make([]*bundle_go_proto.Bundle_Entry, 0)
+	allResponses := make([]*http.Response, 0)
+	searchParam := query
 
-	if query != "" {
-		fullURL += "?" + query
+	for {
+		fullURL := m.url(resourceName)
+
+		if searchParam != "" {
+			fullURL += "?" + searchParam
+		}
+
+		req, err := http.NewRequest("GET", fullURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create request for URL '%s': %s", fullURL, err)
+		}
+
+		req.Header.Set("Content-Type", "application/fhir+json")
+
+		httpResp, err := m.client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("unable to send request: %s", err)
+		}
+
+		result, err := m.generateResult(httpResp)
+		if err != nil {
+			return nil, fmt.Errorf("unable to generate result: %s", err)
+		}
+
+		allResponses = append(allResponses, result.RawHTTPResponses...)
+
+		// Check for non-200 response
+		if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+			return &Result{
+				ContainedResource: result.ContainedResource,
+				MapResource:       result.MapResource,
+				RawHTTPResponses:  allResponses,
+			}, nil
+		}
+
+		// Extract entries from this page
+		if result.ContainedResource != nil && result.ContainedResource.GetBundle() != nil {
+			allEntries = append(allEntries, result.ContainedResource.GetBundle().Entry...)
+		}
+
+		// Look for "next" pagination link
+		nextURL := ""
+
+		if result.ContainedResource != nil && result.ContainedResource.GetBundle() != nil {
+			for _, link := range result.ContainedResource.GetBundle().Link {
+				if link.GetRelation().GetValue() == "next" {
+					// Extract query params from next URL
+					splitURL := strings.Split(link.GetUrl().GetValue(), "?")
+					if len(splitURL) == 2 {
+						nextURL = splitURL[1]
+					}
+
+					break
+				}
+			}
+		}
+
+		if nextURL == "" {
+			break
+		}
+
+		searchParam = nextURL
 	}
 
-	req, err := http.NewRequest("GET", fullURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create request for URL '%s': %s", fullURL, err)
+	// Build combined Bundle with all entries
+	combinedBundle := &bundle_go_proto.Bundle{
+		Entry: allEntries,
 	}
 
-	req.Header.Set("Content-Type", "application/fhir+json")
-
-	httpResp, err := m.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to send request: %s", err)
+	combinedResource := &cr.ContainedResource{
+		OneofResource: &cr.ContainedResource_Bundle{
+			Bundle: combinedBundle,
+		},
 	}
 
-	return m.generateResult(httpResp)
+	return &Result{
+		ContainedResource: combinedResource,
+		RawHTTPResponses:  allResponses,
+	}, nil
 }
 
 func (m *Medplum) ExecuteBatch(ctx context.Context, resource *cr.ContainedResource) (*Result, error) {
@@ -444,31 +514,36 @@ func PrettyPrintResult(result *Result) {
 		fmt.Println("[WARNING] ContainedResource is nil")
 	}
 
-	// Display Raw HTTP Response
-	if result.RawHTTPResponse != nil {
-		fmt.Println("\n[Raw HTTP Response]:")
-		fmt.Printf("Status: %d %s\n", result.RawHTTPResponse.StatusCode, http.StatusText(result.RawHTTPResponse.StatusCode))
-		fmt.Println("Headers:")
-		for key, values := range result.RawHTTPResponse.Header {
-			fmt.Printf("  %s: %s\n", key, values)
-		}
+	// Display Raw HTTP Responses
+	if len(result.RawHTTPResponses) > 0 {
+		fmt.Printf("\n[Raw HTTP Responses] (%d total):\n", len(result.RawHTTPResponses))
 
-		// Read and print response body if available
-		body, err := io.ReadAll(result.RawHTTPResponse.Body)
-		if err == nil && len(body) > 0 {
-			fmt.Println("\n[Raw Response Body]:")
-			var prettyJSON map[string]interface{}
-			if err := json.Unmarshal(body, &prettyJSON); err == nil {
-				formatted, _ := json.MarshalIndent(prettyJSON, "", "  ")
-				fmt.Println(string(formatted))
-			} else {
-				fmt.Println(string(body))
+		for i, resp := range result.RawHTTPResponses {
+			fmt.Printf("\n--- Response %d ---\n", i+1)
+			fmt.Printf("Status: %d %s\n", resp.StatusCode, http.StatusText(resp.StatusCode))
+			fmt.Println("Headers:")
+
+			for key, values := range resp.Header {
+				fmt.Printf("  %s: %s\n", key, values)
 			}
-		} else {
-			fmt.Println("[INFO] No response body available")
+
+			body, err := io.ReadAll(resp.Body)
+			if err == nil && len(body) > 0 {
+				fmt.Println("\n[Raw Response Body]:")
+
+				var prettyJSON map[string]interface{}
+				if err := json.Unmarshal(body, &prettyJSON); err == nil {
+					formatted, _ := json.MarshalIndent(prettyJSON, "", "  ")
+					fmt.Println(string(formatted))
+				} else {
+					fmt.Println(string(body))
+				}
+			} else {
+				fmt.Println("[INFO] No response body available")
+			}
 		}
 	} else {
-		fmt.Println("[WARNING] RawHTTPResponse is nil")
+		fmt.Println("[WARNING] RawHTTPResponses is empty")
 	}
 }
 
@@ -522,6 +597,6 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 	return &Result{
 		ContainedResource: containedResource,
 		MapResource:       mapResource,
-		RawHTTPResponse:   httpResp,
+		RawHTTPResponses:  []*http.Response{httpResp},
 	}, nil
 }

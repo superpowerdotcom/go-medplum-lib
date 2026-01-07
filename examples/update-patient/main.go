@@ -66,8 +66,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		fmt.Printf("Unable to update user (received %d status code)\n", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		fmt.Printf("Unable to update user (received %d status code)\n", result.RawHTTPResponses[0].StatusCode)
 		spew.Dump(result)
 		os.Exit(1)
 	}
@@ -100,8 +100,8 @@ func createPatient(m *medplum.Medplum, patient *patient_go_proto.Patient) (strin
 
 	}
 
-	if result.RawHTTPResponse.StatusCode < 200 || result.RawHTTPResponse.StatusCode >= 300 {
-		return "", "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponse.StatusCode)
+	if result.RawHTTPResponses[0].StatusCode < 200 || result.RawHTTPResponses[0].StatusCode >= 300 {
+		return "", "", fmt.Errorf("failed to create patient resource (StatusCode: %d)", result.RawHTTPResponses[0].StatusCode)
 	}
 
 	patientResource := result.ContainedResource.GetPatient()
