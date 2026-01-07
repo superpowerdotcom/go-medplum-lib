@@ -7,6 +7,9 @@
 go-medplum-lib
 ==============
 
+[![Tests](https://github.com/superpowerdotcom/go-medplum-lib/actions/workflows/test.yml/badge.svg)](https://github.com/superpowerdotcom/go-medplum-lib/actions/workflows/test.yml)
+![Coverage](https://img.shields.io/badge/Coverage-67.9%25-yellow)
+
 A Go library for interfacing with Medplum using [Google's FHIR protos](https://github.com/superpowerdotcom/fhir).
 
 ## Why?
