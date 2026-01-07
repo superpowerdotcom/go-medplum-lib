@@ -359,9 +359,20 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 
 		// Check for non-200 response
 		if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+			// Return accumulated entries from successful pages even on error
+			combinedBundle := &bundle_go_proto.Bundle{
+				Entry: allEntries,
+			}
+
+			combinedResource := &cr.ContainedResource{
+				OneofResource: &cr.ContainedResource_Bundle{
+					Bundle: combinedBundle,
+				},
+			}
+
 			return &Result{
-				ContainedResource: result.ContainedResource,
-				MapResource:       result.MapResource,
+				ContainedResource: combinedResource,
+				MapResource:       result.MapResource, // error info from failed page
 				RawHTTPResponses:  allResponses,
 			}, nil
 		}

@@ -1,3 +1,6 @@
+[![Tests](https://github.com/superpowerdotcom/go-medplum-lib/actions/workflows/test.yml/badge.svg)](https://github.com/superpowerdotcom/go-medplum-lib/actions/workflows/test.yml)
+![Coverage](https://img.shields.io/badge/Coverage-68.1%25-yellow)
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/golang-samples/gopher-vector/master/gopher.png" style="width: 10%; height: 10%; display: inline-block;" alt="Gopher Logo">
   +
@@ -6,9 +9,6 @@
 
 go-medplum-lib
 ==============
-
-[![Tests](https://github.com/superpowerdotcom/go-medplum-lib/actions/workflows/test.yml/badge.svg)](https://github.com/superpowerdotcom/go-medplum-lib/actions/workflows/test.yml)
-![Coverage](https://img.shields.io/badge/Coverage-67.9%25-yellow)
 
 A Go library for interfacing with Medplum using [Google's FHIR protos](https://github.com/superpowerdotcom/fhir).
 
