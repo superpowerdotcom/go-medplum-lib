@@ -19,6 +19,8 @@ import (
 	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
 	bundle_go_proto "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 	cr "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
+	"github.com/superpowerdotcom/go-common-lib/clog"
+	"go.uber.org/zap"
 )
 
 type IMedplum interface {
@@ -72,6 +74,10 @@ type Options struct {
 	//
 	// Default: false
 	LogErrors bool
+
+	// Optional: Logger to use for logging errors; if not provided, will use
+	// standard log.
+	Log clog.ICustomLog
 }
 
 // Result is a common "wrapper" struct that is returned from some of the public
@@ -596,7 +602,14 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 	containedResource, err := unmarshaller.UnmarshalR4(bodyBytes)
 	if err != nil {
 		if m.opts.LogErrors {
-			log.Println("go-medplum-lib: unable to unmarshal response body using FHIR protos: " + err.Error())
+			if m.opts.Log != nil {
+				m.opts.Log.Warn("unable to unmarshal response body using FHIR protos",
+					zap.String("error", err.Error()),
+					zap.String("rawResponseBody", string(bodyBytes)),
+				)
+			} else {
+				log.Println("go-medplum-lib: unable to unmarshal response body using FHIR protos: " + err.Error())
+			}
 		}
 	}
 
@@ -610,7 +623,13 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 
 	if err := json.Unmarshal(bodyBytes, &mapResource); err != nil {
 		if m.opts.LogErrors {
-			fmt.Println("go-medplum-lib: unable to unmarshal response body using map: " + err.Error())
+			if m.opts.Log != nil {
+				m.opts.Log.Warn("unable to unmarshal response body using map",
+					zap.String("error", err.Error()),
+				)
+			} else {
+				log.Println("go-medplum-lib: unable to unmarshal response body using map: " + err.Error())
+			}
 		}
 	}
 
