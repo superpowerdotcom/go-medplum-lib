@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.5 - 2025-01-24
+
+### New Features
+
+- **Optional `clog.ICustomLogger`**: Allow passing in an optional custom logger
+  - If not present, will default to `log.Println()` (like before)
+
 ## v1.0.3 - 2025-01-06
 
 ### Breaking Changes
