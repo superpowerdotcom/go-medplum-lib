@@ -2,13 +2,6 @@
 
 ## v1.0.7 - 2025-01-28
 
-### Breaking Changes
-
-- `Options.Log` field type changed from `clog.ICustomLog` to `medplum.Logger`
-  - The `Logger` interface is identical to `clog.ICustomLog` and is now defined locally
-  - This removes the dependency on the private `go-common-lib` repo
-  - Existing code using `clog.ICustomLog` will continue to work (interface is compatible)
-
 ### New Features
 
 - **`OnResponse` callback**: Added optional `OnResponse` callback to `Options` that fires after every call to `generateResult()`
@@ -18,6 +11,10 @@
 
 ### Other Changes
 
+- `Options.Log` field type changed from `clog.ICustomLog` to `medplum.Logger`
+  - The `Logger` interface is identical to `clog.ICustomLog` and is now defined locally
+  - This removes the dependency on the private `go-common-lib` repo
+  - Existing code using `clog.ICustomLog` will continue to work (interface is compatible)
 - Removed unused `ErrBundleCannotBeNil` and `ErrBundleEntryCannotBeEmpty` error variables
 
 ## v1.0.6 - 2025-01-24
