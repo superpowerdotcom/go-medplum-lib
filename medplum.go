@@ -78,6 +78,16 @@ type Options struct {
 	// Optional: Logger to use for logging errors; if not provided, will use
 	// standard log.
 	Log clog.ICustomLog
+
+	// Optional: OnResponse is called after every call to generateResult(),
+	// regardless of success or failure. It receives the HTTP response,
+	// the body bytes (if successfully read), and any error that occurred.
+	//
+	// This is useful for debugging, monitoring, or handling cases where
+	// Medplum responses don't conform to FHIR protobuf schemas.
+	//
+	// For usage, see OnResponse section in README.md.
+	OnResponse func(resp *http.Response, body []byte, err error)
 }
 
 // Result is a common "wrapper" struct that is returned from some of the public
@@ -118,10 +128,8 @@ type Medplum struct {
 }
 
 var (
-	ErrResourceCannotBeNil      = errors.New("resource cannot be nil")
-	ErrInvalidResource          = errors.New("invalid resource")
-	ErrBundleCannotBeNil        = errors.New("bundle cannot be nil")
-	ErrBundleEntryCannotBeEmpty = errors.New("bundle entry cannot be empty")
+	ErrResourceCannotBeNil = errors.New("resource cannot be nil")
+	ErrInvalidResource     = errors.New("invalid resource")
 )
 
 func New(opts *Options) (*Medplum, error) {
@@ -577,15 +585,32 @@ func (m *Medplum) url(resourceName string) string {
 	return fmt.Sprintf("%s/fhir/R4/%s", m.opts.MedplumURL, resourceName)
 }
 
+// generateResult is used by most public methods to read an HTTP response
+// and attempt to unmarshal it to a protobuf FHIR R4 type. Will also call
+// OnResponse callback (if provided) on method exit.
 func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
+	var (
+		bodyBytes []byte
+		returnErr error
+	)
+
+	defer func() {
+		if m.opts.OnResponse != nil {
+			m.opts.OnResponse(httpResp, bodyBytes, returnErr)
+		}
+	}()
+
 	if httpResp == nil {
-		return nil, errors.New("http response cannot be nil")
+		returnErr = errors.New("http response cannot be nil")
+		return nil, returnErr
 	}
 
-	// Read the body so we can create a ContainedResource
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+	var err error
+
+	bodyBytes, err = io.ReadAll(httpResp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read response body: %s", err)
+		returnErr = fmt.Errorf("unable to read response body: %s", err)
+		return nil, returnErr
 	}
 
 	defer httpResp.Body.Close()
@@ -596,11 +621,14 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 	// Unmarshal the response body into a ContainedResource
 	unmarshaller, err := jsonformat.NewUnmarshallerWithoutValidation(m.opts.Timezone, fhirversion.R4)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create unmarshaler: %s", err)
+		returnErr = fmt.Errorf("unable to create unmarshaler: %s", err)
+		return nil, returnErr
 	}
 
 	containedResource, err := unmarshaller.UnmarshalR4(bodyBytes)
 	if err != nil {
+		returnErr = err
+
 		if m.opts.LogErrors {
 			if m.opts.Log != nil {
 				m.opts.Log.Warn("unable to unmarshal response body using FHIR protos",

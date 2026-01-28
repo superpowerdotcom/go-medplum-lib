@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.0.7 - 2025-01-28
+
+### New Features
+
+- **`OnResponse` callback**: Added optional `OnResponse` callback to `Options` that fires after every call to `generateResult()`
+  - Receives the HTTP response, body bytes, and any error that occurred
+  - Useful for debugging protobuf unmarshal failures, monitoring, or custom error handling
+  - See "OnResponse Callback" section in README.md for usage examples
+
+### Other Changes
+
+- Removed unused `ErrBundleCannotBeNil` and `ErrBundleEntryCannotBeEmpty` error variables
+
+## v1.0.6 - 2025-01-24
+
+### Dependencies
+
+- Bumped `github.com/superpowerdotcom/fhir/go` from v0.0.10 to v0.2.1
+
 ## v1.0.5 - 2025-01-24
 
 ### New Features

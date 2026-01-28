@@ -435,3 +435,157 @@ func TestPrettyPrintResult_NoPanic(t *testing.T) {
 		RawHTTPResponses:  []*http.Response{},
 	})
 }
+
+func TestOnResponse_CalledOnSuccess(t *testing.T) {
+	var callbackCalled bool
+	var callbackResp *http.Response
+	var callbackBody []byte
+	var callbackErr error
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/fhir+json")
+		response := map[string]interface{}{
+			"resourceType": "Patient",
+			"id":           "123",
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	m := &Medplum{
+		client: server.Client(),
+		opts: &Options{
+			MedplumURL: server.URL,
+			Timezone:   "UTC",
+			OnResponse: func(resp *http.Response, body []byte, err error) {
+				callbackCalled = true
+				callbackResp = resp
+				callbackBody = body
+				callbackErr = err
+			},
+		},
+	}
+
+	_, err := m.ReadResource(nil, "123", codes_go_proto.ResourceTypeCode_PATIENT)
+	if err != nil {
+		t.Fatalf("ReadResource failed: %v", err)
+	}
+
+	if !callbackCalled {
+		t.Error("Expected OnResponse callback to be called")
+	}
+
+	if callbackResp == nil {
+		t.Error("Expected callback to receive non-nil response")
+	}
+
+	if callbackBody == nil {
+		t.Error("Expected callback to receive non-nil body")
+	}
+
+	if !strings.Contains(string(callbackBody), "Patient") {
+		t.Errorf("Expected body to contain 'Patient', got: %s", string(callbackBody))
+	}
+
+	if callbackErr != nil {
+		t.Errorf("Expected callback error to be nil, got: %v", callbackErr)
+	}
+}
+
+func TestOnResponse_CalledOnUnmarshalError(t *testing.T) {
+	var callbackCalled bool
+	var callbackBody []byte
+	var callbackErr error
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/fhir+json")
+		w.Write([]byte(`{"resourceType": "InvalidResource", "customField": "value"}`))
+	}))
+	defer server.Close()
+
+	m := &Medplum{
+		client: server.Client(),
+		opts: &Options{
+			MedplumURL: server.URL,
+			Timezone:   "UTC",
+			OnResponse: func(resp *http.Response, body []byte, err error) {
+				callbackCalled = true
+				callbackBody = body
+				callbackErr = err
+			},
+		},
+	}
+
+	_, err := m.ReadResource(nil, "123", codes_go_proto.ResourceTypeCode_PATIENT)
+	if err != nil {
+		t.Fatalf("ReadResource failed: %v", err)
+	}
+
+	if !callbackCalled {
+		t.Error("Expected OnResponse callback to be called")
+	}
+
+	if callbackBody == nil {
+		t.Error("Expected callback to receive body bytes")
+	}
+
+	if callbackErr == nil {
+		t.Error("Expected callback to receive unmarshal error")
+	}
+}
+
+func TestOnResponse_CalledOnNilResponse(t *testing.T) {
+	var callbackCalled bool
+	var callbackResp *http.Response
+	var callbackErr error
+
+	m := &Medplum{
+		opts: &Options{
+			Timezone: "UTC",
+			OnResponse: func(resp *http.Response, body []byte, err error) {
+				callbackCalled = true
+				callbackResp = resp
+				callbackErr = err
+			},
+		},
+	}
+
+	_, err := m.generateResult(nil)
+	if err == nil {
+		t.Fatal("Expected error for nil response")
+	}
+
+	if !callbackCalled {
+		t.Error("Expected OnResponse callback to be called even on nil response")
+	}
+
+	if callbackResp != nil {
+		t.Error("Expected callback to receive nil response")
+	}
+
+	if callbackErr == nil {
+		t.Error("Expected callback to receive error")
+	}
+}
+
+func TestOnResponse_NotCalledWhenNil(t *testing.T) {
+	m := &Medplum{
+		opts: &Options{
+			Timezone:   "UTC",
+			OnResponse: nil,
+		},
+	}
+
+	body := `{"resourceType":"Patient","id":"123"}`
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Header:     make(http.Header),
+	}
+	resp.Header.Set("Content-Type", "application/fhir+json")
+
+	_, err := m.generateResult(resp)
+	if err != nil {
+		t.Fatalf("generateResult failed: %v", err)
+	}
+}
