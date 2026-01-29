@@ -30,14 +30,10 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/superpowerdotcom/fhir/go v0.0.10 h1:dvaL6E+qnfUNknr7/b6H41HZ8JK6U6rrlu4QB7QOwJc=
-github.com/superpowerdotcom/fhir/go v0.0.10/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
 github.com/superpowerdotcom/fhir/go v0.2.1 h1:2AQ4+lqmuL85VXGk+qtZxcgRzC63UErDQLevkPBQur0=
 github.com/superpowerdotcom/fhir/go v0.2.1/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
 github.com/superpowerdotcom/fhir/go/protopath v0.0.0 h1:qvVjSuev+8CjBDJ4lD4fnGuqcs/QgkyJAn31c2gjSIQ=
 github.com/superpowerdotcom/fhir/go/protopath v0.0.0/go.mod h1:JbH7snW8Ohj/E407wXVVVgdBka9uNwu8sjF9BvSYBMM=
-github.com/superpowerdotcom/go-common-lib v0.0.43 h1:BoycLUA+hIQeX7tenNFY8qO9NDA5mrfHJDyHWMYQdto=
-github.com/superpowerdotcom/go-common-lib v0.0.43/go.mod h1:Z0NKepvmln+paS/Zt2i3r/Gem+bG+2TisBQAHTFX0wk=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.10.0 h1:S0h4aNzvfcFsC3dRF1jLoaov7oRaKqRGC/pUEJ2yvPQ=

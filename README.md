@@ -112,6 +112,45 @@ For more advanced usage, such as handling binary resources and linking them to
 `DocumentReference`, how to perform transactions and more, refer to the detailed
 examples in the [./examples](./examples) directory.
 
+## OnResponse Callback
+
+See [examples/on-response](./examples/on-response) for a complete example.
+
+The library attempts to unmarshal Medplum responses into protobuf FHIR R4 types.
+Sometimes Medplum returns data that doesn't conform to the protobuf schemas, causing
+unmarshal errors like:
+
+```
+2026/01/27 10:31:28 go-medplum-lib: unable to unmarshal response body using FHIR protos: error at "Bundle.entry[190].resource.ofType(QuestionnaireResponse).item[5].item[5].answer[0].valueInteger"
+```
+
+The `OnResponse` callback provides programmatic access to the raw response data
+for debugging, monitoring, or custom error handling:
+
+```go
+m, err := medplum.New(&medplum.Options{
+    MedplumURL:   "http://localhost:8103",
+    ClientID:     "your-client-id",
+    ClientSecret: "your-client-secret",
+    OnResponse: func(resp *http.Response, body []byte, err error) {
+        if err != nil {
+            // Log the unmarshal error
+            log.Printf("Unmarshal error: %v", err)
+
+            // Log the raw response for debugging
+            log.Printf("Raw response body:\n%s", string(body))
+        }
+    },
+})
+```
+
+The callback is called after every `generateResult()` invocation, regardless of
+success or failure. It receives:
+
+- `resp` - the `*http.Response` (may be nil if the response itself was nil)
+- `body` - the raw response body bytes (nil if body couldn't be read)
+- `err` - any error that occurred during unmarshaling (nil on success)
+
 ## Contributing
 
 Contributions are welcome! If you have suggestions for improvements or have found a bug, please open an issue or submit a pull request.

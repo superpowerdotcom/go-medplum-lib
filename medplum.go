@@ -12,27 +12,39 @@ import (
 	"strings"
 
 	"github.com/newrelic/go-agent/v3/newrelic"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/superpowerdotcom/fhir/go/fhirversion"
 	"github.com/superpowerdotcom/fhir/go/jsonformat"
-	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
-	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
-	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
-	bundle_go_proto "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
-	cr "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
-	"github.com/superpowerdotcom/go-common-lib/clog"
-	"go.uber.org/zap"
+	c_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
+	dt_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/datatypes_go_proto"
+	b_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/binary_go_proto"
+	bcr_gp "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
 )
 
 type IMedplum interface {
-	CreateResource(ctx context.Context, resource *cr.ContainedResource) (*Result, error)
+	CreateResource(ctx context.Context, resource *bcr_gp.ContainedResource) (*Result, error)
 	CreateBinaryResource(ctx context.Context, data []byte, contentType string) (*Result, error)
-	UpdateResource(ctx context.Context, id string, resource *cr.ContainedResource) (*Result, error)
-	DeleteResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
-	ReadResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
-	ReadResourceHistory(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error)
-	Search(ctx context.Context, code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error)
-	ExecuteBatch(ctx context.Context, resource *cr.ContainedResource) (*Result, error)
-	Post(ctx context.Context, resource *cr.ContainedResource, endpoint ...string) (*Result, error)
+	UpdateResource(ctx context.Context, id string, resource *bcr_gp.ContainedResource) (*Result, error)
+	DeleteResource(ctx context.Context, id string, code c_gp.ResourceTypeCode_Value) (*Result, error)
+	ReadResource(ctx context.Context, id string, code c_gp.ResourceTypeCode_Value) (*Result, error)
+	ReadResourceHistory(ctx context.Context, id string, code c_gp.ResourceTypeCode_Value) (*Result, error)
+	Search(ctx context.Context, code c_gp.ResourceTypeCode_Value, query string) (*Result, error)
+	ExecuteBatch(ctx context.Context, resource *bcr_gp.ContainedResource) (*Result, error)
+	Post(ctx context.Context, resource *bcr_gp.ContainedResource, endpoint ...string) (*Result, error)
+}
+
+// Logger is an interface for structured logging. It is compatible with
+// go-common-lib/clog.ICustomLog and can be satisfied by wrapping a *zap.Logger.
+type Logger interface {
+	Debug(msg string, fields ...zap.Field)
+	Info(msg string, fields ...zap.Field)
+	Warn(msg string, fields ...zap.Field)
+	Error(msg string, fields ...zap.Field)
+	Fatal(msg string, fields ...zap.Field)
+	Log(level zapcore.Level, msg string, fields ...zap.Field)
+	With(fields ...zap.Field) Logger
 }
 
 type Options struct {
@@ -77,7 +89,17 @@ type Options struct {
 
 	// Optional: Logger to use for logging errors; if not provided, will use
 	// standard log.
-	Log clog.ICustomLog
+	Log Logger
+
+	// Optional: OnResponse is called after every call to generateResult(),
+	// regardless of success or failure. It receives the HTTP response,
+	// the body bytes (if successfully read), and any error that occurred.
+	//
+	// This is useful for debugging, monitoring, or handling cases where
+	// Medplum responses don't conform to FHIR protobuf schemas.
+	//
+	// For usage, see OnResponse section in README.md.
+	OnResponse func(resp *http.Response, body []byte, err error)
 }
 
 // Result is a common "wrapper" struct that is returned from some of the public
@@ -95,7 +117,7 @@ type Result struct {
 	//
 	// You can see an example of what's involved in extracting a contained
 	// resource in some of the examples in `./examples` dir.
-	ContainedResource *cr.ContainedResource
+	ContainedResource *bcr_gp.ContainedResource
 
 	// MapResource is used as a "basic"/"last-resort" storage structure for
 	// storing responses from Medplum. If ContainedResource is nil, you can try
@@ -118,10 +140,8 @@ type Medplum struct {
 }
 
 var (
-	ErrResourceCannotBeNil      = errors.New("resource cannot be nil")
-	ErrInvalidResource          = errors.New("invalid resource")
-	ErrBundleCannotBeNil        = errors.New("bundle cannot be nil")
-	ErrBundleEntryCannotBeEmpty = errors.New("bundle entry cannot be empty")
+	ErrResourceCannotBeNil = errors.New("resource cannot be nil")
+	ErrInvalidResource     = errors.New("invalid resource")
 )
 
 func New(opts *Options) (*Medplum, error) {
@@ -155,11 +175,11 @@ func (m *Medplum) CreateBinaryResource(ctx context.Context, data []byte, content
 		return nil, errors.New("contentType cannot be empty")
 	}
 
-	resource := &cr.ContainedResource{
-		OneofResource: &cr.ContainedResource_Binary{
-			Binary: &binary_go_proto.Binary{
-				ContentType: &binary_go_proto.Binary_ContentTypeCode{Value: contentType},
-				Data:        &datatypes_go_proto.Base64Binary{Value: data},
+	resource := &bcr_gp.ContainedResource{
+		OneofResource: &bcr_gp.ContainedResource_Binary{
+			Binary: &b_gp.Binary{
+				ContentType: &b_gp.Binary_ContentTypeCode{Value: contentType},
+				Data:        &dt_gp.Base64Binary{Value: data},
 			},
 		},
 	}
@@ -167,7 +187,7 @@ func (m *Medplum) CreateBinaryResource(ctx context.Context, data []byte, content
 	return m.CreateResource(ctx, resource)
 }
 
-func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedResource) (*Result, error) {
+func (m *Medplum) CreateResource(ctx context.Context, resource *bcr_gp.ContainedResource) (*Result, error) {
 	if ctx != nil {
 		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.CreateResource")
 		defer segment.End()
@@ -185,7 +205,7 @@ func (m *Medplum) CreateResource(ctx context.Context, resource *cr.ContainedReso
 	return m.Post(ctx, resource, resourceName)
 }
 
-func (m *Medplum) ReadResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+func (m *Medplum) ReadResource(ctx context.Context, id string, code c_gp.ResourceTypeCode_Value) (*Result, error) {
 	if ctx != nil {
 		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.ReadResource")
 		defer segment.End()
@@ -215,7 +235,7 @@ func (m *Medplum) ReadResource(ctx context.Context, id string, code codes_go_pro
 	return m.generateResult(httpResp)
 }
 
-func (m *Medplum) ReadResourceHistory(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+func (m *Medplum) ReadResourceHistory(ctx context.Context, id string, code c_gp.ResourceTypeCode_Value) (*Result, error) {
 	if ctx != nil {
 		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.ReadResourceHistory")
 		defer segment.End()
@@ -245,7 +265,7 @@ func (m *Medplum) ReadResourceHistory(ctx context.Context, id string, code codes
 	return m.generateResult(httpResp)
 }
 
-func (m *Medplum) UpdateResource(ctx context.Context, id string, resource *cr.ContainedResource) (*Result, error) {
+func (m *Medplum) UpdateResource(ctx context.Context, id string, resource *bcr_gp.ContainedResource) (*Result, error) {
 	if ctx != nil {
 		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.UpdateResource")
 		defer segment.End()
@@ -287,7 +307,7 @@ func (m *Medplum) UpdateResource(ctx context.Context, id string, resource *cr.Co
 	return m.generateResult(httpResp)
 }
 
-func (m *Medplum) DeleteResource(ctx context.Context, id string, code codes_go_proto.ResourceTypeCode_Value) (*Result, error) {
+func (m *Medplum) DeleteResource(ctx context.Context, id string, code c_gp.ResourceTypeCode_Value) (*Result, error) {
 	if ctx != nil {
 		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.DeleteResource")
 		defer segment.End()
@@ -322,7 +342,7 @@ func (m *Medplum) DeleteResource(ctx context.Context, id string, code codes_go_p
 // in RawHTTPResponses.
 //
 // Refer: https://hl7.org/fhir/search.html
-func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCode_Value, query string) (*Result, error) {
+func (m *Medplum) Search(ctx context.Context, code c_gp.ResourceTypeCode_Value, query string) (*Result, error) {
 	if ctx != nil {
 		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.Search")
 		defer segment.End()
@@ -333,7 +353,7 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
 	}
 
-	allEntries := make([]*bundle_go_proto.Bundle_Entry, 0)
+	allEntries := make([]*bcr_gp.Bundle_Entry, 0)
 	allResponses := make([]*http.Response, 0)
 	searchParam := query
 
@@ -375,12 +395,12 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 		// Check for non-200 response
 		if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
 			// Return accumulated entries from successful pages even on error
-			combinedBundle := &bundle_go_proto.Bundle{
+			combinedBundle := &bcr_gp.Bundle{
 				Entry: allEntries,
 			}
 
-			combinedResource := &cr.ContainedResource{
-				OneofResource: &cr.ContainedResource_Bundle{
+			combinedResource := &bcr_gp.ContainedResource{
+				OneofResource: &bcr_gp.ContainedResource_Bundle{
 					Bundle: combinedBundle,
 				},
 			}
@@ -422,12 +442,12 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 	}
 
 	// Build combined Bundle with all entries
-	combinedBundle := &bundle_go_proto.Bundle{
+	combinedBundle := &bcr_gp.Bundle{
 		Entry: allEntries,
 	}
 
-	combinedResource := &cr.ContainedResource{
-		OneofResource: &cr.ContainedResource_Bundle{
+	combinedResource := &bcr_gp.ContainedResource{
+		OneofResource: &bcr_gp.ContainedResource_Bundle{
 			Bundle: combinedBundle,
 		},
 	}
@@ -438,7 +458,7 @@ func (m *Medplum) Search(ctx context.Context, code codes_go_proto.ResourceTypeCo
 	}, nil
 }
 
-func (m *Medplum) ExecuteBatch(ctx context.Context, resource *cr.ContainedResource) (*Result, error) {
+func (m *Medplum) ExecuteBatch(ctx context.Context, resource *bcr_gp.ContainedResource) (*Result, error) {
 	if ctx != nil {
 		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.ExecuteBatch")
 		defer segment.End()
@@ -451,7 +471,7 @@ func (m *Medplum) ExecuteBatch(ctx context.Context, resource *cr.ContainedResour
 //
 // NOTE: If "endpoint" is provided - only the first element will be used for
 // constructing the URL that the client will POST to.
-func (m *Medplum) Post(ctx context.Context, resource *cr.ContainedResource, endpoint ...string) (*Result, error) {
+func (m *Medplum) Post(ctx context.Context, resource *bcr_gp.ContainedResource, endpoint ...string) (*Result, error) {
 	if ctx != nil {
 		segment := newrelic.FromContext(ctx).StartSegment("go-medplum-lib.Post")
 		defer segment.End()
@@ -577,15 +597,32 @@ func (m *Medplum) url(resourceName string) string {
 	return fmt.Sprintf("%s/fhir/R4/%s", m.opts.MedplumURL, resourceName)
 }
 
+// generateResult is used by most public methods to read an HTTP response
+// and attempt to unmarshal it to a protobuf FHIR R4 type. Will also call
+// OnResponse callback (if provided) on method exit.
 func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
+	var (
+		bodyBytes []byte
+		returnErr error
+	)
+
+	defer func() {
+		if m.opts.OnResponse != nil {
+			m.opts.OnResponse(httpResp, bodyBytes, returnErr)
+		}
+	}()
+
 	if httpResp == nil {
-		return nil, errors.New("http response cannot be nil")
+		returnErr = errors.New("http response cannot be nil")
+		return nil, returnErr
 	}
 
-	// Read the body so we can create a ContainedResource
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+	var err error
+
+	bodyBytes, err = io.ReadAll(httpResp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read response body: %s", err)
+		returnErr = fmt.Errorf("unable to read response body: %s", err)
+		return nil, returnErr
 	}
 
 	defer httpResp.Body.Close()
@@ -596,11 +633,14 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 	// Unmarshal the response body into a ContainedResource
 	unmarshaller, err := jsonformat.NewUnmarshallerWithoutValidation(m.opts.Timezone, fhirversion.R4)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create unmarshaler: %s", err)
+		returnErr = fmt.Errorf("unable to create unmarshaler: %s", err)
+		return nil, returnErr
 	}
 
 	containedResource, err := unmarshaller.UnmarshalR4(bodyBytes)
 	if err != nil {
+		returnErr = err
+
 		if m.opts.LogErrors {
 			if m.opts.Log != nil {
 				m.opts.Log.Warn("unable to unmarshal response body using FHIR protos",
@@ -616,7 +656,7 @@ func (m *Medplum) generateResult(httpResp *http.Response) (*Result, error) {
 	// If we failed to unmarshal response, create an empty ContainedResource to
 	// prevent panics in caller code.
 	if containedResource == nil {
-		containedResource = &cr.ContainedResource{}
+		containedResource = &bcr_gp.ContainedResource{}
 	}
 
 	mapResource := make(map[string]interface{})
