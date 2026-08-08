@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### New Features
+
+- Added optional `Options.HTTPClient` injection for service-owned HTTP transport instrumentation.
+- Medplum FHIR requests now preserve caller context for cancellation, deadlines, and distributed tracing; nil contexts remain supported without attribution.
+
 ## v1.0.7 - 2025-01-28
 
 ### New Features
