@@ -47,6 +47,24 @@ import (
 ## Usage
 Refer to the [./examples](./examples) directory for example code demonstrating how to create, read, search, update, and delete resources using this library.
 
+### HTTP instrumentation and request contexts
+
+Use `Options.HTTPClient` to supply a service-owned HTTP client with any desired
+transport instrumentation. The client is not mutated; its transport is used as
+the base transport for the authenticated OAuth client created by this library.
+
+Every Medplum operation preserves its supplied `context.Context` on outbound
+FHIR API requests, including pagination requests. This allows cancellation,
+deadlines, and tracing state to reach an instrumented transport. OAuth token
+acquisition and refresh continue to use `Options.ClientCtx`. Passing `nil`
+remains supported for backwards compatibility, but a nil context cannot carry
+request or job tracing attribution.
+
+For end-to-end tracing, callers must both inject an instrumented HTTP client and
+pass an active request or job context to each Medplum operation. This library
+does not attach FHIR resource IDs, search values, request bodies, authorization
+headers, or other clinical data to telemetry.
+
 ### Basic Example
 Here's a basic example to get you started:
 

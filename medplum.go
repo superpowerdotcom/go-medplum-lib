@@ -64,14 +64,21 @@ type Options struct {
 	// Default: $MedplumURL + "/oauth2/token"
 	TokenURL string
 
-	// Optional: ClientCtx allows you to pass a context that can include a
-	// custom http.Client.
-	//
-	// Read more about this here: https://pkg.go.dev/golang.org/x/oauth2/clientcredentials#Config.Client
-	// Read about the oauth2.HTTPClient var: https://pkg.go.dev/golang.org/x/oauth2#pkg-variables
+	// Optional: ClientCtx is the base context used for OAuth token acquisition
+	// and refresh.
+	// Use HTTPClient below to inject a custom HTTP transport explicitly.
 	//
 	// Default: context.Background()
 	ClientCtx context.Context
+
+	// Optional: HTTPClient is the base client used for OAuth token exchange and
+	// authenticated Medplum requests. This allows callers to install transport
+	// instrumentation without mutating a shared or global HTTP client.
+	//
+	// The client is not modified. Its transport is used as the OAuth client's
+	// base transport, while its redirect policy, cookie jar, and timeout are
+	// copied to the authenticated client created for this Medplum instance.
+	HTTPClient *http.Client
 
 	// Optional: Timezone used when marshalling and unmarshalling responses from
 	// Medplum API.
@@ -220,7 +227,7 @@ func (m *Medplum) ReadResource(ctx context.Context, id string, code c_gp.Resourc
 		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
 	}
 
-	req, err := http.NewRequest("GET", m.url(resourceName)+"/"+id, nil)
+	req, err := newRequest(ctx, "GET", m.url(resourceName)+"/"+id, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
@@ -250,7 +257,7 @@ func (m *Medplum) ReadResourceHistory(ctx context.Context, id string, code c_gp.
 		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
 	}
 
-	req, err := http.NewRequest("GET", m.url(resourceName)+"/"+id+"/_history", nil)
+	req, err := newRequest(ctx, "GET", m.url(resourceName)+"/"+id+"/_history", nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
@@ -292,7 +299,7 @@ func (m *Medplum) UpdateResource(ctx context.Context, id string, resource *bcr_g
 	}
 
 	// Send to Medplum API
-	req, err := http.NewRequest("PUT", m.url(resourceName)+"/"+id, bytes.NewBuffer(data))
+	req, err := newRequest(ctx, "PUT", m.url(resourceName)+"/"+id, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
@@ -318,7 +325,7 @@ func (m *Medplum) DeleteResource(ctx context.Context, id string, code c_gp.Resou
 		return nil, fmt.Errorf("unable to get resource name from type code: %s", err)
 	}
 
-	req, err := http.NewRequest("DELETE", m.url(resourceName)+"/"+id, nil)
+	req, err := newRequest(ctx, "DELETE", m.url(resourceName)+"/"+id, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
@@ -373,7 +380,7 @@ func (m *Medplum) Search(ctx context.Context, code c_gp.ResourceTypeCode_Value, 
 			fullURL += "?" + searchParam
 		}
 
-		req, err := http.NewRequest("GET", fullURL, nil)
+		req, err := newRequest(ctx, "GET", fullURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create request for URL '%s': %s", fullURL, err)
 		}
@@ -499,7 +506,7 @@ func (m *Medplum) Post(ctx context.Context, resource *bcr_gp.ContainedResource, 
 	}
 
 	// Send to Medplum API
-	req, err := http.NewRequest("POST", fullURL, bytes.NewBuffer(data))
+	req, err := newRequest(ctx, "POST", fullURL, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request: %s", err)
 	}

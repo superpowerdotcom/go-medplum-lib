@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/codes_go_proto"
 	cr "github.com/superpowerdotcom/fhir/go/proto/google/fhir/proto/r4/core/resources/bundle_and_contained_resource_go_proto"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -78,11 +80,26 @@ func validateOptions(opts *Options) error {
 		opts.ClientCtx = context.Background()
 	}
 
+	if opts.HTTPClient != nil {
+		opts.ClientCtx = context.WithValue(opts.ClientCtx, oauth2.HTTPClient, opts.HTTPClient)
+	}
+
 	if _, err := time.LoadLocation(opts.Timezone); err != nil {
 		return fmt.Errorf("invalid timezone: %s", err)
 	}
 
 	return nil
+}
+
+// newRequest preserves the caller's context so cancellation, deadlines, and
+// tracing state reach the HTTP transport. Nil remains supported for backwards
+// compatibility, but cannot carry tracing attribution.
+func newRequest(ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	return http.NewRequestWithContext(ctx, method, url, body)
 }
 
 func validResource(resource *cr.ContainedResource) error {
