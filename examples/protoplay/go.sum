@@ -26,10 +26,6 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
-github.com/superpowerdotcom/fhir/go v0.0.4 h1:Kp+sfe+nyWkj5TE7n0zvkYEUJC3LKM+zDqGoA49P/7I=
-github.com/superpowerdotcom/fhir/go v0.0.4/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
-github.com/superpowerdotcom/fhir/go v0.0.5 h1:NlYsC+/rEcMRL1IdcTABKPRe32koDMDfKJvmpwv0tjY=
-github.com/superpowerdotcom/fhir/go v0.0.5/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
 github.com/superpowerdotcom/fhir/go v0.0.6 h1:sq5ybunodMmlU1YJhx+zXPuTv70duADY6F0OxnfP5jM=
 github.com/superpowerdotcom/fhir/go v0.0.6/go.mod h1:el/B9Q+wYwWFVyu+36UQCtfxSh3RtB1KsPWWuHGVY78=
 github.com/superpowerdotcom/fhir/go/protopath v0.0.0 h1:qvVjSuev+8CjBDJ4lD4fnGuqcs/QgkyJAn31c2gjSIQ=

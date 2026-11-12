@@ -1,6 +1,6 @@
 module github.com/superpowerdotcom/protoplay
 
-go 1.23.0
+go 1.26
 
 require github.com/superpowerdotcom/fhir/go v0.0.6
 
