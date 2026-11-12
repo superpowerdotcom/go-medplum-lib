@@ -1,8 +1,6 @@
 module github.com/superpowerdotcom/go-medplum-lib
 
-go 1.24.0
-
-toolchain go1.24.5
+go 1.26
 
 require (
 	github.com/davecgh/go-spew v1.1.1
